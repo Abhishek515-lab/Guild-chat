@@ -1,0 +1,399 @@
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap');
+@import "tailwindcss";
+@layer base {
+  
+  :root {
+    /* Anime Cherry Blossom Theme - Default */
+    --background: 340 30% 97%;
+    --foreground: 260 30% 15%;
+
+    --card: 340 40% 98%;
+    --card-foreground: 260 30% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 260 30% 15%;
+
+    --primary: 340 70% 65%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 270 40% 90%;
+    --secondary-foreground: 260 30% 20%;
+
+    --muted: 340 20% 93%;
+    --muted-foreground: 260 10% 45%;
+
+    --accent: 270 60% 70%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 340 30% 88%;
+    --input: 340 20% 90%;
+    --ring: 340 70% 65%;
+
+    --radius: 1rem;
+
+    /* Custom anime tokens */
+    --anime-sakura: 340 80% 78%;
+    --anime-lavender: 270 50% 75%;
+    --anime-indigo: 240 60% 30%;
+    --anime-cream: 40 60% 95%;
+    --anime-teal: 175 60% 50%;
+    --anime-gold: 45 90% 60%;
+    --anime-bubble-sent: 340 60% 92%;
+    --anime-bubble-received: 270 30% 95%;
+    --anime-online: 145 70% 50%;
+    --anime-offline: 220 15% 60%;
+    --anime-glass: 0 0% 100% / 0.7;
+    --anime-glass-border: 0 0% 100% / 0.3;
+    --anime-gradient-start: 340 70% 65%;
+    --anime-gradient-end: 270 60% 70%;
+
+    /* Sidebar */
+    --sidebar-background: 340 30% 96%;
+    --sidebar-foreground: 260 30% 15%;
+    --sidebar-primary: 340 70% 65%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 270 40% 90%;
+    --sidebar-accent-foreground: 260 30% 20%;
+    --sidebar-border: 340 30% 88%;
+    --sidebar-ring: 340 70% 65%;
+
+    --font-heading: 'Nunito', sans-serif;
+    --font-body: 'Quicksand', sans-serif;
+  }
+
+  
+  /* Neon City Theme */
+  .theme-neon {
+    --background: 240 30% 8%;
+    --foreground: 180 80% 90%;
+
+    --card: 240 25% 12%;
+    --card-foreground: 180 80% 90%;
+
+    --popover: 240 25% 12%;
+    --popover-foreground: 180 80% 90%;
+
+    --primary: 180 100% 50%;
+    --primary-foreground: 240 30% 8%;
+
+    --secondary: 300 80% 60%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 240 20% 18%;
+    --muted-foreground: 220 20% 60%;
+
+    --accent: 300 80% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --border: 240 20% 20%;
+    --input: 240 20% 18%;
+    --ring: 180 100% 50%;
+
+    --anime-sakura: 300 80% 60%;
+    --anime-lavender: 270 80% 65%;
+    --anime-bubble-sent: 180 60% 15%;
+    --anime-bubble-received: 300 30% 15%;
+    --anime-online: 120 100% 50%;
+    --anime-glass: 240 30% 12% / 0.8;
+    --anime-glass-border: 180 100% 50% / 0.2;
+    --anime-gradient-start: 180 100% 50%;
+    --anime-gradient-end: 300 80% 60%;
+  }
+
+  /* Rainy Evening Theme */
+  .theme-rainy {
+    --background: 215 30% 14%;
+    --foreground: 210 20% 85%;
+
+    --card: 215 25% 18%;
+    --card-foreground: 210 20% 85%;
+
+    --popover: 215 25% 18%;
+    --popover-foreground: 210 20% 85%;
+
+    --primary: 200 70% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 215 30% 25%;
+    --secondary-foreground: 210 20% 85%;
+
+    --muted: 215 20% 22%;
+    --muted-foreground: 215 15% 55%;
+
+    --accent: 200 50% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --border: 215 20% 25%;
+    --input: 215 20% 22%;
+    --ring: 200 70% 55%;
+
+    --anime-sakura: 200 60% 60%;
+    --anime-lavender: 230 40% 55%;
+    --anime-bubble-sent: 200 40% 22%;
+    --anime-bubble-received: 215 25% 25%;
+    --anime-online: 145 60% 45%;
+    --anime-glass: 215 30% 18% / 0.8;
+    --anime-glass-border: 200 70% 55% / 0.2;
+    --anime-gradient-start: 200 70% 55%;
+    --anime-gradient-end: 230 40% 55%;
+  }
+
+  /* Clean Light Theme */
+  .theme-light {
+    --background: 0 0% 98%;
+    --foreground: 220 15% 20%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 15% 20%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 15% 20%;
+
+    --primary: 220 80% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 20% 94%;
+    --secondary-foreground: 220 15% 30%;
+
+    --muted: 220 10% 94%;
+    --muted-foreground: 220 10% 50%;
+
+    --accent: 220 60% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --border: 220 15% 90%;
+    --input: 220 10% 92%;
+    --ring: 220 80% 55%;
+
+    --anime-sakura: 220 70% 60%;
+    --anime-lavender: 240 40% 65%;
+    --anime-bubble-sent: 220 50% 93%;
+    --anime-bubble-received: 220 15% 96%;
+    --anime-online: 145 70% 45%;
+    --anime-glass: 0 0% 100% / 0.85;
+    --anime-glass-border: 220 20% 80% / 0.4;
+    --anime-gradient-start: 220 80% 55%;
+    --anime-gradient-end: 240 60% 65%;
+  }
+
+  /* Hacker Theme */
+  .theme-hacker {
+    --background: 120 10% 5%;
+    --foreground: 120 100% 65%;
+
+    --card: 120 10% 8%;
+    --card-foreground: 120 100% 65%;
+
+    --popover: 120 10% 8%;
+    --popover-foreground: 120 100% 65%;
+
+    --primary: 120 100% 45%;
+    --primary-foreground: 120 10% 5%;
+
+    --secondary: 120 20% 12%;
+    --secondary-foreground: 120 80% 60%;
+
+    --muted: 120 10% 12%;
+    --muted-foreground: 120 30% 40%;
+
+    --accent: 120 80% 50%;
+    --accent-foreground: 120 10% 5%;
+
+    --border: 120 20% 15%;
+    --input: 120 10% 10%;
+    --ring: 120 100% 45%;
+
+    --anime-sakura: 120 100% 50%;
+    --anime-lavender: 120 60% 40%;
+    --anime-bubble-sent: 120 30% 10%;
+    --anime-bubble-received: 120 15% 8%;
+    --anime-online: 120 100% 55%;
+    --anime-glass: 120 10% 6% / 0.9;
+    --anime-glass-border: 120 100% 45% / 0.15;
+    --anime-gradient-start: 120 100% 45%;
+    --anime-gradient-end: 120 60% 30%;
+  }
+
+  /* Game World Theme */
+  .theme-game {
+    --background: 260 40% 10%;
+    --foreground: 50 100% 90%;
+
+    --card: 260 35% 14%;
+    --card-foreground: 50 100% 90%;
+
+    --popover: 260 35% 14%;
+    --popover-foreground: 50 100% 90%;
+
+    --primary: 45 100% 55%;
+    --primary-foreground: 260 40% 10%;
+
+    --secondary: 330 80% 55%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 260 25% 18%;
+    --muted-foreground: 260 15% 55%;
+
+    --accent: 330 80% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --border: 260 25% 22%;
+    --input: 260 25% 16%;
+    --ring: 45 100% 55%;
+
+    --anime-sakura: 45 100% 55%;
+    --anime-lavender: 330 70% 55%;
+    --anime-bubble-sent: 45 40% 15%;
+    --anime-bubble-received: 260 25% 18%;
+    --anime-online: 120 100% 50%;
+    --anime-glass: 260 35% 12% / 0.85;
+    --anime-glass-border: 45 100% 55% / 0.2;
+    --anime-gradient-start: 45 100% 55%;
+    --anime-gradient-end: 330 80% 55%;
+  }
+
+  /* Futuristic Theme */
+  .theme-futuristic {
+    --background: 230 30% 8%;
+    --foreground: 200 80% 85%;
+
+    --card: 230 25% 12%;
+    --card-foreground: 200 80% 85%;
+
+    --popover: 230 25% 12%;
+    --popover-foreground: 200 80% 85%;
+
+    --primary: 195 100% 50%;
+    --primary-foreground: 230 30% 8%;
+
+    --secondary: 270 70% 60%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 230 20% 16%;
+    --muted-foreground: 220 20% 50%;
+
+    --accent: 270 70% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --border: 230 20% 20%;
+    --input: 230 20% 14%;
+    --ring: 195 100% 50%;
+
+    --anime-sakura: 195 100% 55%;
+    --anime-lavender: 270 60% 60%;
+    --anime-bubble-sent: 195 40% 14%;
+    --anime-bubble-received: 230 20% 16%;
+    --anime-online: 160 100% 50%;
+    --anime-glass: 230 25% 10% / 0.85;
+    --anime-glass-border: 195 100% 50% / 0.15;
+    --anime-gradient-start: 195 100% 50%;
+    --anime-gradient-end: 270 70% 60%;
+  }
+}
+
+@layer base {
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-body);
+  }
+}
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+
+@layer components {
+  .glass-panel {
+    background: hsl(var(--anime-glass));
+    backdrop-filter: blur(16px);
+    border: 1px solid hsl(var(--anime-glass-border));
+  }
+
+  .anime-gradient {
+    background: linear-gradient(135deg, hsl(var(--anime-gradient-start)), hsl(var(--anime-gradient-end)));
+  }
+
+  .chat-bubble-sent {
+    background: hsl(var(--anime-bubble-sent));
+    border-radius: 1.25rem 1.25rem 0.25rem 1.25rem;
+  }
+
+  .chat-bubble-received {
+    background: hsl(var(--anime-bubble-received));
+    border-radius: 1.25rem 1.25rem 1.25rem 0.25rem;
+  }
+
+  .avatar-glow {
+    box-shadow: 0 0 20px hsl(var(--anime-sakura) / 0.5), 0 0 40px hsl(var(--anime-lavender) / 0.3);
+  }
+
+  .avatar-online-glow {
+    box-shadow: 0 0 12px hsl(var(--anime-online) / 0.6);
+  }
+}
+
+/* Sakura particles */
+@keyframes sakura-fall {
+  0% { transform: translateY(-10vh) translateX(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(110vh) translateX(80px) rotate(720deg); opacity: 0; }
+}
+
+@keyframes float-gentle {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes blink {
+  0%, 90%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+@keyframes nod {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(3deg); }
+  75% { transform: rotate(-3deg); }
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg); }
+  75% { transform: rotate(5deg); }
+}
+
+@keyframes bounce-soft {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes rain-drop {
+  0% { transform: translateY(-10vh); opacity: 0.7; }
+  100% { transform: translateY(110vh); opacity: 0; }
+}
+
+@keyframes neon-pulse {
+  0%, 100% { opacity: 1; text-shadow: 0 0 10px currentColor; }
+  50% { opacity: 0.8; text-shadow: 0 0 20px currentColor, 0 0 40px currentColor; }
+}
+
+.animate-sakura { animation: sakura-fall linear infinite; }
+.animate-float { animation: float-gentle 3s ease-in-out infinite; }
+.animate-blink { animation: blink 4s ease-in-out infinite; }
+.animate-breathe { animation: breathe 3s ease-in-out infinite; }
+.animate-nod { animation: nod 0.5s ease-in-out; }
+.animate-wiggle { animation: wiggle 0.4s ease-in-out; }
+.animate-bounce-soft { animation: bounce-soft 0.6s ease-in-out; }
+.animate-rain { animation: rain-drop linear infinite; }
+.animate-neon-pulse { animation: neon-pulse 2s ease-in-out infinite; }
