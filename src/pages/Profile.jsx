@@ -1,20 +1,40 @@
+
+
+// export default Profile;
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
   Camera,
-  Edit2,
-  Shield,
-  Bell,
-  Palette,
-  Star,
   Trophy,
-  ChevronRight,
   LogOut,
+  Edit2,
+  Palette,
+  Bell,
+  Shield,
+  Star,
+  ChevronRight,
+  User as UserIcon 
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import AnimeAvatar from "@/components/AnimeAvatar";
-import { currentUser } from "@/data/mockData";
+import { useAuth } from "../contexts/AuthContext";
+import AnimeAvatar from "../components/AnimeAvatar";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
+
+
+import avatarSakura from "../assets/avatar-sakura.png";
+import avatarKai from "../assets/avatar-kai.png";
+import avatarLuna from "../assets/avatar-luna.png";
+import avatarHaru from "../assets/avatar-haru.png";
+import avatarYuki from "../assets/avatar-yuki.png";
+
+const avatars = [avatarSakura, avatarKai, avatarLuna, avatarHaru, avatarYuki];
 
 const xpData = {
   level: 12,
@@ -25,176 +45,172 @@ const xpData = {
   streak: 7,
 };
 
-const stats = [
-  { label: "Messages", value: "4.2K", icon: "💬" },
-  { label: "Stickers", value: "312", icon: "🎨" },
-  { label: "Friends", value: "28", icon: "👥" },
-  { label: "Groups", value: "6", icon: "🏠" },
-];
-
-const menuItems = [
-  { icon: Edit2, label: "Edit Profile", desc: "Name, bio, avatar", color: "text-primary" },
-  { icon: Palette, label: "Themes & Style", desc: "Colors, effects, outfits", color: "text-accent" },
-  { icon: Bell, label: "Notifications", desc: "Sounds, anime SFX", color: "text-anime-gold" },
-  { icon: Shield, label: "Privacy", desc: "Online status, chat lock", color: "text-anime-teal" },
-  { icon: Star, label: "Achievements", desc: "Badges & unlocks", color: "text-anime-sakura" },
-];
-
 const Profile = () => {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [emotion, setEmotion] = useState("happy");
+  const [avatar, setAvatar] = useState(user?.avatar);
+  
+  // Real Friends Data State
+  const [friendsList, setFriendsList] = useState([]);
+  const [loadingFriends, setLoadingFriends] = useState(false);
 
-  const xpPercent = xpData.nextLevelXP
-    ? (xpData.currentXP / xpData.nextLevelXP) * 100
-    : 0;
+  useEffect(() => {
+    if (user?.avatar) {
+      setAvatar(user.avatar);
+    }
+    
+// fatch friend list
+    const fetchFriends = async () => {
+      setLoadingFriends(true);
+      try {
+       
+        const data = user?.friends || []; 
+        setFriendsList(data);
+      } catch (error) {
+        console.error("Error fetching friends:", error);
+      } finally {
+        setLoadingFriends(false);
+      }
+    };
 
-  const cleanName = currentUser.name.replace(/^You \(|\)$/g, "");
+    fetchFriends();
+  }, [user]);
+
+  const xpPercent = (xpData.currentXP / xpData.nextLevelXP) * 100;
+
+  const handleAvatarSelect = (img) => {
+    setAvatar(img);
+  };
+
+ 
+  const otherStats = [
+    { label: "Messages", value: user?.stats?.messages || "4.2K", icon: "💬" },
+    { label: "Stickers", value: user?.stats?.stickers || "312", icon: "🎨" },
+    { label: "Groups", value: user?.stats?.groups || "6", icon: "🏠" },
+  ];
+
+  const menuItems = [
+    { icon: Edit2, label: "Edit Profile", desc: "Name, bio, avatar", color: "text-primary" },
+    { icon: Palette, label: "Themes & Style", desc: "Colors, effects, outfits", color: "text-accent" },
+    { icon: Bell, label: "Notifications", desc: "Sounds, anime SFX", color: "text-yellow-500" },
+    { icon: Shield, label: "Privacy", desc: "Online status, chat lock", color: "text-teal-500" },
+    { icon: Star, label: "Achievements", desc: "Badges & unlocks", color: "text-pink-500" },
+  ];
 
   return (
     <div className="flex flex-col h-screen relative z-10">
       <div className="flex-1 overflow-y-auto">
-        {/* Header */}
+        
+        {/* HEADER */}
         <motion.header
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
           className="glass-panel px-4 py-3 flex items-center gap-3 md:hidden"
         >
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={() => navigate("/")}
-            className="p-1 text-foreground"
-          >
+          <button onClick={() => navigate("/")} className="p-1">
             <ArrowLeft className="w-5 h-5" />
-          </motion.button>
-          <h2 className="text-sm font-heading font-bold text-foreground">
-            My Profile
-          </h2>
+          </button>
+          <h2 className="text-sm font-bold">My Profile</h2>
         </motion.header>
 
-        {/* Profile Hero */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative px-6 pt-8 pb-6 flex flex-col items-center"
-        >
+        {/* PROFILE HERO */}
+        <motion.div className="relative px-6 pt-8 pb-6 flex flex-col items-center">
           <div className="absolute inset-0 anime-gradient opacity-10 rounded-b-3xl" />
-
           <div className="relative mb-4">
-            <AnimeAvatar
-              src={currentUser.avatar}
-              name={currentUser.name}
-              status="online"
-              emotion={emotion}
-              size="xl"
-              showStatus={false}
-            />
+            <AnimeAvatar src={avatar || user?.avatar} name={user?.username} status="online" emotion={emotion} size="xl" showStatus={false} />
+            
+            <Dialog>
+              <DialogTrigger asChild>
+                <motion.button className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full anime-gradient flex items-center justify-center text-white shadow-lg">
+                  <Camera className="w-4 h-4" />
+                </motion.button>
+              </DialogTrigger>
+              <DialogContent className="max-w-sm bg-white">
+                <DialogTitle className="text-center">Choose Anime Avatar</DialogTitle>
+                <div className="grid grid-cols-3 gap-4 mt-4">
+                  {avatars.map((img, index) => (
+                    <img key={index} src={img} alt="avatar" className="w-16 h-16 rounded-full cursor-pointer hover:scale-110 transition" onClick={() => handleAvatarSelect(img)} />
+                  ))}
+                </div>
+              </DialogContent>
+            </Dialog>
 
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full anime-gradient flex items-center justify-center text-primary-foreground shadow-lg"
-            >
-              <Camera className="w-4 h-4" />
-            </motion.button>
-
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.3, type: "spring" }}
-              className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-anime-gold flex items-center justify-center text-xs font-bold text-foreground shadow-lg"
-            >
+            <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center text-xs font-bold text-black">
               {xpData.level}
-            </motion.div>
+            </div>
           </div>
 
-          <h1 className="text-xl font-heading font-extrabold text-foreground">
-            {cleanName}
-          </h1>
-
-          <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-            <Trophy className="w-3 h-3" />
-            {xpData.title}
+          <h1 className="text-xl font-bold">{user?.username || "Guest User"}</h1>
+          <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <Trophy className="w-3 h-3" /> {xpData.title}
           </p>
 
-          {/* Mood Selector */}
           <div className="flex gap-2 mt-3">
             {["happy", "playful", "neutral", "sad", "surprised"].map((e) => (
-              <motion.button
-                key={e}
-                whileHover={{ scale: 1.2 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={() => setEmotion(e)}
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm transition-all ${
-                  emotion === e
-                    ? "anime-gradient shadow-md scale-110"
-                    : "bg-muted/60 hover:bg-muted"
-                }`}
-              >
-                {e === "happy"
-                  ? "😄"
-                  : e === "playful"
-                  ? "😜"
-                  : e === "neutral"
-                  ? "😐"
-                  : e === "sad"
-                  ? "😢"
-                  : "😲"}
-              </motion.button>
-            ))}
-          </div>
-
-          {/* Badges */}
-          <div className="flex gap-1.5 mt-3">
-            {xpData.badges.map((badge, i) => (
-              <motion.span
-                key={i}
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.4 + i * 0.1 }}
-                className="text-lg"
-              >
-                {badge}
-              </motion.span>
+              <button key={e} onClick={() => setEmotion(e)} className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${emotion === e ? "anime-gradient shadow-md scale-110" : "bg-muted/60"}`}>{e === "happy" ? "😄" : e === "playful" ? "😜" : e === "neutral" ? "😐" : e === "sad" ? "😢" : "😲"}</button>
             ))}
           </div>
         </motion.div>
 
-        {/* XP Bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="mx-6 mb-6 glass-panel rounded-2xl p-4"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-heading font-bold text-foreground">
-              Level {xpData.level}
-            </span>
-            <span className="text-[10px] text-muted-foreground">
-              {xpData.currentXP} / {xpData.nextLevelXP} XP
-            </span>
-          </div>
+        {/* STATS GRID WITH REAL FRIENDS DIALOG */}
+        <div className="grid grid-cols-4 gap-2 mx-6 mb-6">
+          {/* Friends Stat with Dialog */}
+          <Dialog>
+            <DialogTrigger asChild>
+              <motion.div className="glass-panel rounded-xl p-3 flex flex-col items-center gap-1 cursor-pointer hover:bg-muted/50 transition-colors">
+                <span className="text-lg">👥</span>
+                <span className="text-sm font-bold">{friendsList.length || user?.friendsCount || 0}</span>
+                <span className="text-[9px] text-muted-foreground">Friends</span>
+              </motion.div>
+            </DialogTrigger>
+            <DialogContent className="max-w-sm max-h-[70vh] overflow-y-auto bg-white">
+              <DialogHeader>
+                <DialogTitle>Friends List ({friendsList.length})</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3 mt-4">
+                {loadingFriends ? (
+                  <p className="text-center text-sm">Loading friends...</p>
+                ) : friendsList.length > 0 ? (
+                  friendsList.map((friend, idx) => (
+                    <div key={idx} className="flex items-center gap-3 p-2 rounded-lg border border-slate-100">
+                      <img src={friend.avatar || avatarSakura} className="w-10 h-10 rounded-full border-2 border-primary/20" alt={friend.username} />
+                      <div className="flex-1">
+                        <p className="text-sm font-bold">{friend.username}</p>
+                        <p className="text-[10px] text-green-500">{friend.status || "Online"}</p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-center text-muted-foreground text-sm py-4">No friends found yet. 🌸</p>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
 
-          <div className="w-full h-2.5 rounded-full bg-muted/60 overflow-hidden">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${xpPercent}%` }}
-              transition={{ duration: 1, delay: 0.5 }}
-              className="h-full rounded-full anime-gradient"
-            />
-          </div>
-        </motion.div>
+          {/* Other Stats */}
+          {otherStats.map((stat, i) => (
+            <div key={stat.label} className="glass-panel rounded-xl p-3 flex flex-col items-center gap-1">
+              <span className="text-lg">{stat.icon}</span>
+              <span className="text-sm font-bold">{stat.value}</span>
+              <span className="text-[9px] text-muted-foreground">{stat.label}</span>
+            </div>
+          ))}
+        </div>
 
-        {/* Logout */}
+        {/* MENU & LOGOUT (Same as before) */}
+        <div className="mx-6 mb-6 space-y-2">
+          {menuItems.map((item) => (
+            <button key={item.label} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left">
+              <div className={`w-9 h-9 rounded-lg bg-muted/60 flex items-center justify-center ${item.color}`}><item.icon className="w-4 h-4" /></div>
+              <div className="flex-1"><p className="text-sm font-bold">{item.label}</p><p className="text-[10px] text-muted-foreground">{item.desc}</p></div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </button>
+          ))}
+        </div>
+
         <div className="mx-6 mb-8">
-          <motion.button
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-destructive/10 text-destructive text-sm font-heading font-bold transition-all hover:bg-destructive/20"
-          >
-            <LogOut className="w-4 h-4" />
-            Log Out
+          <motion.button onClick={() => { logout(); navigate("/auth"); }} className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 text-red-500 font-bold hover:bg-red-500/20 transition-all">
+            <LogOut className="w-4 h-4" /> Log Out
           </motion.button>
         </div>
       </div>

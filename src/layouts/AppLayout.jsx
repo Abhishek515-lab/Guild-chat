@@ -4,7 +4,7 @@ import { MessageCircle } from "lucide-react";
 import ChatSidebar from "../components/ChatSidebar";
 import FABMenu from "../components/FABMenu";
 import { useIsMobile } from "../hooks/use-mobile";
-
+import useListenRequests from "../hooks/useListenRequests";
 const EmptyState = () => (
   <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-4">
     <motion.div
@@ -29,10 +29,11 @@ const EmptyState = () => (
 const AppLayout = () => {
   const isMobile = useIsMobile();
   const location = useLocation();
+  useListenRequests();
   const isRoot = location.pathname === "/";
   const hasContent = !isRoot;
 
-  // 📱 Mobile Layout
+  // Mobile Layout
   if (isMobile) {
     if (isRoot) {
       return (
@@ -45,12 +46,13 @@ const AppLayout = () => {
 
     return (
       <div className="h-screen relative z-10">
+        
         <Outlet />
       </div>
     );
   }
 
-  // 💻 Desktop Layout
+  // Desktop Layout
   return (
     <div className="flex h-screen relative z-10">
       {/* Sidebar */}

@@ -29,7 +29,7 @@ const FABMenu = () => {
               <span className="px-3 py-1.5 rounded-lg glass-panel text-xs font-heading font-bold text-foreground shadow-md">
                 {item.label}
               </span>
-              <div className={`w-11 h-11 rounded-full bg-gradient-to-br ${item.color} shadow-lg flex items-center justify-center text-primary-foreground`}>
+              <div className={`w-11 h-11 rounded-full ${item.color} shadow-lg flex items-center justify-center text-primary-foreground`}>
                 <item.icon className="w-5 h-5" />
               </div>
             </motion.button>
