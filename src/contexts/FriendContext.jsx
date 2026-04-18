@@ -1,6 +1,7 @@
-import { createContext, useContext, useState } from "react";
-import axios from "axios";
+import { createContext, useContext, useState, useEffect } from "react";
+import api from "../Api/axios"; // 👈 Make sure path sahi ho
 import { toast } from "sonner";
+
 const FriendContext = createContext();
 
 export const FriendProvider = ({ children }) => {
@@ -8,17 +9,20 @@ export const FriendProvider = ({ children }) => {
   const [pendingRequests, setPendingRequests] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // --- 1. Pending Requests Fetch Karne Ka Function (REQUIRED FOR NOTIFICATIONS) ---
+  const fetchFriends = async () => {
+    try {
+      const res = await api.get("/users/friends");
+      setFriends(res.data);
+    } catch (error) {
+      console.error("Fetch Friends Error:", error);
+    }
+  };
+
   const fetchPendingRequests = async () => {
     try {
       setLoading(true);
-      const userInfo = JSON.parse(localStorage.getItem("userInfo"));
-      const token = userInfo?.token;
-
-      const res = await axios.get("http://localhost:5000/api/users/requests/pending", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setPendingRequests(res.data); // Backend se aayi list yahan set hogi
+      const res = await api.get("/users/requests/pending");
+      setPendingRequests(res.data);
     } catch (error) {
       console.error("Fetch Pending Error:", error);
     } finally {
@@ -26,89 +30,51 @@ export const FriendProvider = ({ children }) => {
     }
   };
 
-  // --- 2. Send Request ---
   const sendRequest = async (targetId) => {
     try {
-      // 🚨 Debugging ke liye console log lagao
-      console.log("Accepting request for ID:", targetId);
-      
-      const response = await axios.post(
-        "http://localhost:5000/api/users/request/accept", 
-        { targetId },
-        getConfig()
-      );
-
-      // ✅ List se hatao
-      setPendingRequests(prev => prev.filter(req => (req._id || req) !== targetId));
-
-      // ✅ LocalStorage update (varna refresh pe wapas aa jayega)
-      const userInfo = JSON.parse(localStorage.getItem("userInfo"));
-      if (response.data.user) {
-         localStorage.setItem("userInfo", JSON.stringify({
-            ...userInfo,
-            friends: response.data.user.friends,
-            pendingRequests: response.data.user.pendingRequests
-         }));
-      }
-
-      toast.success("Friend request accepted! 🌸");
-      return response.data;
-
+      const res = await api.post("/users/request/send", { targetId });
+      toast.success("Request sent! 🌸");
+      return res.data;
     } catch (err) {
-      // 🚨 Exact error dekhne ke liye:
-      const message = err.response?.data?.message || "Failed to accept request";
-      console.error("FULL ERROR:", err.response); // Browser console check karo yahan
-      toast.error(message);
+      toast.error(err.response?.data?.message || "Failed to send request");
     }
   };
 
-  // --- 3. Accept Request ---
- const acceptRequest = async (targetId) => {
-  try {
-    const userInfo = JSON.parse(localStorage.getItem("userInfo"));
-    
-    const response = await axios.post(
-      "http://localhost:5000/api/users/request/accept", 
-      { targetId },
-      { headers: { Authorization: `Bearer ${userInfo?.token}` } }
-    );
-
-    // 🔥 SABSE ZAROORI: LocalStorage ko naye data se replace karo
-    // Backend se aane wala 'response.data.user' fresh hona chahiye
-    if (response.data.user) {
-      const updatedInfo = { 
-        ...userInfo, 
-        friends: response.data.user.friends, 
-        pendingRequests: response.data.user.pendingRequests 
-      };
+  const acceptRequest = async (targetId) => {
+    try {
+      await api.post("/users/request/accept", { targetId });
       
-      localStorage.setItem("userInfo", JSON.stringify(updatedInfo));
+      setPendingRequests((prev) => 
+        prev.filter((req) => (req._id || req) !== targetId)
+      );
       
-      // State update karo taaki screen turant badle
-      setPendingRequests(response.data.user.pendingRequests);
-      setFriends(response.data.user.friends);
+      await fetchFriends();
+      toast.success("Dost ban gaya! 🎉");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to accept");
     }
+  };
 
-    toast.success("Dost ban gaya! 🎉");
-    
-    // Agar state sync nahi ho rahi, toh force refresh kar do (Temporary Fix)
-    // window.location.reload(); 
+  useEffect(() => {
+    const userInfo = localStorage.getItem("userInfo");
+    if (userInfo) {
+      fetchFriends();
+      fetchPendingRequests();
+    }
+  }, []);
 
-  } catch (err) {
-    console.error("Accept Error:", err.response?.data);
-    toast.error(err.response?.data?.message || "Failed to accept");
-  }
-};
   return (
-    <FriendContext.Provider value={{ 
-      friends, 
-      pendingRequests, 
-      setPendingRequests, // Notification update ke liye zaroori hai
-      fetchPendingRequests, 
-      sendRequest, 
-      acceptRequest, 
-      loading 
-    }}>
+    <FriendContext.Provider 
+      value={{ 
+        friends, 
+        pendingRequests, 
+        fetchFriends, 
+        fetchPendingRequests, 
+        sendRequest, 
+        acceptRequest, 
+        loading 
+      }}
+    >
       {children}
     </FriendContext.Provider>
   );

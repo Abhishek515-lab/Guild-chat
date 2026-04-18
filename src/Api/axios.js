@@ -1,9 +1,17 @@
+// frontend/src/Api/axios.js
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL;
-
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: import.meta.env.VITE_API_URL,
+});
+
+api.interceptors.request.use((config) => {
+  const userInfo = localStorage.getItem("userInfo");
+  if (userInfo) {
+    const { token } = JSON.parse(userInfo);
+    config.headers.Authorization = `Bearer ${token}`; 
+  }
+  return config;
 });
 
 export default api;

@@ -36,17 +36,32 @@ const Auth = () => {
   };
 
   // ---------- LOGIN ----------
+
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
       setLoading(true);
-      const { error } = await signIn(email, password);
+
+      // 1. signIn se data (jisne token ho) aur error nikaalein
+      const { data, error } = await signIn(email, password);
 
       if (error) {
         toast.error(error.message);
       } else {
-        navigate("/");
+        // 2. TOKEN SAVE KARO (Ye missing tha!)
+        if (data && data.token) {
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("user", JSON.stringify(data.user));
+
+          toast.success("Welcome back! 👋");
+          navigate("/");
+        } else {
+          toast.error("Login failed: Token not received");
+        }
       }
+    } catch (err) {
+      toast.error("Something went wrong during login");
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -99,8 +114,6 @@ const Auth = () => {
 
     try {
       setLoading(true);
-
-      // 1. Response se user aur token nikaalein
       const { data, error } = await signUp({
         firstName,
         lastName,
@@ -114,33 +127,19 @@ const Auth = () => {
         return;
       }
 
-      // 2. LocalStorage mein data save karein (Sabse Important)
-      if (data) {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
-
-        // 3. Agar aap koi setUser function use kar rahe hain context se:
-        // setUser(data.user); 
-      }
-
       toast.success("Account created successfully! 🎉");
-
-      // 4. Navigate karne se pehle ensure karein ki data load ho gaya hai
-      // Kabhi-kabhi navigate ki jagah window.location.href = "/" use karna 
-      // behtar hota hai agar state sync ka issue aa raha ho.
-      navigate("/");
+      navigate("/"); // Context update ho chuka hai, ab navigate safe hai.
 
     } catch (err) {
       toast.error("Something went wrong");
-      console.error(err);
     } finally {
       setLoading(false);
     }
   };
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center bg-cyan-200 px-6">
-      <h1 className="text-5xl font-black text-white mb-6">
-        AnimeChat
+    <div className="min-h-screen flex flex-col justify-center items-center bg-pink-200 px-6">
+      <h1 className="text-5xl font-black text-black mb-6">
+        GuildChat
       </h1>
 
       {/* ---------------- LOGIN ---------------- */}
@@ -152,7 +151,7 @@ const Auth = () => {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-4 rounded-xl text-lg outline-none"
+            className="w-full p-4 rounded-xl text-lg"
           />
 
           <input
@@ -161,7 +160,7 @@ const Auth = () => {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-4 rounded-xl text-lg outline-none"
+            className="w-full p-4 rounded-xl text-lg "
           />
 
           <button

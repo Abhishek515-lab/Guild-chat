@@ -1,88 +1,123 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import axios from "axios";
 import {
   loginUser,
   registerUser,
   sendOTPApi,
   verifyOTPApi
 } from "../Api/authApi";
+
+import api from "../Api/axios";
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-
-  const API_URL = import.meta.env.VITE_API_URL;
-
-  // Load user from localStorage
-  useEffect(() => {
-    const storedUser = localStorage.getItem("userInfo");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+  // State initialization: 
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem("userInfo");
+    try {
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch (e) {
+      return null;
     }
-  }, []);
+  });
 
-  // LOGIN
+  // LOGIN logic
+  const signIn = async (email, password) => {
+    try {
+      const response = await loginUser(email, password);
 
-const signIn = async (email, password) => {
-  try {
-    const { data } = await loginUser(email, password);
-    
-    // Yahan galti thi: data.user lene se token chhut jata tha
-    // Hume pura object chahiye jisme token aur user dono hon
-    const userInfo = {
-      ...data.user,    // User details (name, email etc.)
-      token: data.token // Backend se aaya hua token
-    };
+      // Axios response se data nikalna
+      const data = response.data;
 
-    localStorage.setItem("userInfo", JSON.stringify(userInfo));
-    setUser(userInfo);
+      if (!data || !data.token) {
+        return { error: { message: "Server ne token nahi bheja!" } };
+      }
 
-    return { error: null };
-  } catch (error) {
-    return { error: error.response?.data || { message: "Login failed" } };
-  }
-};
+      // Sahi format mein data save karna (user + token)
+      const userInfo = {
+        ...data.user,
+        token: data.token
+      };
+
+      localStorage.setItem("userInfo", JSON.stringify(userInfo));
+      setUser(userInfo);
+
+      return { data: userInfo, error: null };
+    } catch (error) {
+      console.error("Login Error:", error);
+      return { error: error.response?.data || { message: "Login failed" } };
+    }
+  };
 
   // SEND OTP
   const sendOTP = async (email) => {
-  try {
-    await sendOTPApi(email);
-    return { error: null };
-  } catch (error) {
-    return {
-      error: error.response?.data || { message: "Failed to send OTP" },
-    };
-  }
-};
+    try {
+      await sendOTPApi(email);
+      return { error: null };
+    } catch (error) {
+      return { error: error.response?.data || { message: "Failed to send OTP" } };
+    }
+  };
 
   // VERIFY OTP
- const verifyEmail = async (email, otp) => {
-  try {
-    await verifyOTPApi(email, otp);
-    return { error: null };
-  } catch (error) {
-    return {
-      error: error.response?.data || { message: "Invalid OTP" },
-    };
-  }
-};
+  const verifyEmail = async (email, otp) => {
+    try {
+      await verifyOTPApi(email, otp);
+      return { error: null };
+    } catch (error) {
+      return { error: error.response?.data || { message: "Invalid OTP" } };
+    }
+  };
 
   // FINAL SIGNUP
   const signUp = async (userData) => {
+    try {
+      const response = await registerUser(userData);
+      const data = response.data;
+
+      if (!data || !data.token) {
+        return { error: { message: "Signup successful but token missing" } };
+      }
+
+
+      const userInfo = {
+        ...userData,
+        ...data.user,
+        token: data.token
+      };
+
+      localStorage.setItem("userInfo", JSON.stringify(userInfo));
+      setUser(userInfo); // State update!
+
+      return { data: userInfo, error: null };
+    } catch (error) {
+      return { error: error.response?.data || { message: "Signup failed" } };
+    }
+  };
+
+  // AuthContext.jsx ke andar
+  // AuthContext.jsx ke andar
+ const updateProfile = async (userData) => {
   try {
-    const { data } = await registerUser(userData);
+    const response = await api.put("/auth/profile", userData);
 
-    localStorage.setItem("userInfo", JSON.stringify(data));
-    setUser(data);
+    const updatedUser = response.data; //  FIXED
 
-    return { error: null };
+    const newUserInfo = { ...user, ...updatedUser };
+
+    localStorage.setItem("userInfo", JSON.stringify(newUserInfo));
+    setUser(newUserInfo);
+
+    return { success: true, data: updatedUser };
+
   } catch (error) {
+    console.error("PROFILE UPDATE ERROR:", error.response || error);
+
     return {
-      error: error.response?.data || { message: "Signup failed" },
+      success: false,
+      error: error.response?.data?.message || "Update failed",
     };
   }
 };
-
   // LOGOUT
   const logout = () => {
     localStorage.removeItem("userInfo");
@@ -91,7 +126,7 @@ const signIn = async (email, password) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, signIn, signUp, logout, sendOTP, verifyEmail }}
+      value={{ user, signIn, signUp, logout, sendOTP, verifyEmail, updateProfile }}
     >
       {children}
     </AuthContext.Provider>
@@ -99,5 +134,9 @@ const signIn = async (email, password) => {
 };
 
 export const useAuth = () => {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 };

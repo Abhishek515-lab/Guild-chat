@@ -147,13 +147,13 @@ const Notifications = () => {
                     <div className="flex gap-2 pl-12">
                       <button
                         onClick={() => handleAccept(notif.id, notif.senderId)}
-                        className="bg-primary text-white px-6 py-2 rounded-2xl text-[11px] font-bold shadow-md hover:brightness-110 active:scale-95 transition"
+                        className="bg-primary text-muted-foreground  px-6 py-2 rounded-2xl text-[11px] font-bold shadow-md hover:brightness-110 active:scale-95 transition"
                       >
                         Accept
                       </button>
                       <button
                         onClick={() => removeNotification(notif.id)}
-                        className="bg-muted text-muted-foreground px-6 py-2 rounded-2xl text-[11px] font-bold hover:bg-muted/80 transition"
+                        className="bg-primary text-muted-foreground px-6 py-2 rounded-2xl text-[11px] font-bold hover:bg-muted/80 transition"
                       >
                         Decline
                       </button>

@@ -15,3 +15,9 @@ export const sendOTPApi = (email) => {
 export const verifyOTPApi = (email, otp) => {
   return api.post("/auth/verify-otp", { email, otp });
 };
+
+
+export const updateProfileApi = (userData) => {
+  // Backend route agar PUT hai toh .put use karein
+  return api.put("/api/auth/profile", userData);
+};

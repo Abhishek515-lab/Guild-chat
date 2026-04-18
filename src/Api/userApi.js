@@ -2,7 +2,7 @@ import api from "./axios";
 
 // get current user
 export const getCurrentUser = () => {
-  return api.get("/users/me");
+  return api.get("/users/profile");
 };
 
 // update avatar

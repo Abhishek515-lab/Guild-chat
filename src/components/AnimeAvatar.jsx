@@ -1,5 +1,8 @@
 import { motion } from "framer-motion";
 
+// 🌸 Default Sakura path set karlo
+const DEFAULT_SAKURA = "/uploads/avatar-sakura.png";
+
 const sizeMap = {
   sm: "w-10 h-10",
   md: "w-14 h-14",
@@ -18,36 +21,13 @@ const emotionEmoji = {
 };
 
 const emotionAnimation = {
-  neutral: {
-    y: [0, -4, 0],
-    transition: { duration: 3, repeat: Infinity, ease: "easeInOut" },
-  },
-  happy: {
-    y: [0, -8, 0],
-    rotate: [0, 3, -3, 0],
-    transition: { duration: 0.6, repeat: Infinity },
-  },
-  sad: {
-    y: [0, 2, 0],
-    transition: { duration: 2, repeat: Infinity, ease: "easeInOut" },
-  },
-  surprised: {
-    scale: [1, 1.1, 1],
-    transition: { duration: 0.4, repeat: 2 },
-  },
-  playful: {
-    rotate: [0, -8, 8, -8, 0],
-    transition: { duration: 0.5, repeat: Infinity, repeatDelay: 2 },
-  },
-  angry: {
-    x: [0, -3, 3, -3, 0],
-    transition: { duration: 0.3, repeat: 2 },
-  },
-  sleeping: {
-    rotate: [0, 5, 0],
-    y: [0, 3, 0],
-    transition: { duration: 4, repeat: Infinity, ease: "easeInOut" },
-  },
+  neutral: { y: [0, -4, 0], transition: { duration: 3, repeat: Infinity, ease: "easeInOut" } },
+  happy: { y: [0, -8, 0], rotate: [0, 3, -3, 0], transition: { duration: 0.6, repeat: Infinity } },
+  sad: { y: [0, 2, 0], transition: { duration: 2, repeat: Infinity, ease: "easeInOut" } },
+  surprised: { scale: [1, 1.1, 1], transition: { duration: 0.4, repeat: 2 } },
+  playful: { rotate: [0, -8, 8, -8, 0], transition: { duration: 0.5, repeat: Infinity, repeatDelay: 2 } },
+  angry: { x: [0, -3, 3, -3, 0], transition: { duration: 0.3, repeat: 2 } },
+  sleeping: { rotate: [0, 5, 0], y: [0, 3, 0], transition: { duration: 4, repeat: Infinity, ease: "easeInOut" } },
 };
 
 const AnimeAvatar = ({
@@ -65,6 +45,9 @@ const AnimeAvatar = ({
   const selectedAnimation = emotionAnimation[emotion] || emotionAnimation.neutral;
   const selectedEmoji = emotionEmoji[emotion] || "";
 
+  // 💡 FIX: Agar src khali string ("") ya undefined hai, toh Sakura ko bulao
+  const finalSrc = src && src !== "" ? src : DEFAULT_SAKURA;
+
   return (
     <div className="relative inline-flex flex-col items-center">
       <motion.div
@@ -80,13 +63,20 @@ const AnimeAvatar = ({
 
         {/* Avatar image */}
         <motion.img
-          src={src}
-          alt={name}
+          // 🔥 Ab yahan kabhi empty string nahi jayegi
+          src={finalSrc}
+          alt={name || "User Avatar"}
           className={`${selectedSize} rounded-full object-cover border-2 ${
             isOnline ? "border-anime-online" : "border-muted"
           } ${isSleeping ? "opacity-70 grayscale-[30%]" : ""}`}
           whileHover={{ scale: 1.1 }}
           transition={{ type: "spring", stiffness: 300 }}
+          // 💡 Safety layer: Agar path galat ho toh default pe switch kar jaye
+          onError={(e) => {
+            if (e.target.src !== DEFAULT_SAKURA) {
+              e.target.src = DEFAULT_SAKURA;
+            }
+          }}
         />
 
         {/* Status indicator */}

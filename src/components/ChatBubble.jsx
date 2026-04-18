@@ -19,9 +19,9 @@ const ChatBubble = ({ message, isMine }) => {
       initial={{ opacity: 0, y: 10, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.2 }}
-      className={`flex ${isMine ? "justify-end" : "justify-start"} mb-2`}
+      className={`flex ${isMine ? "justify-end" : "justify-start"} mb-2 w-full`}
     >
-      <div className="max-w-[75%]">
+      <div className="max-w-[75%] lg:max-w-[60%]">
         {isSticker ? (
           <motion.div whileHover={{ scale: 1.1 }} className="text-5xl py-2">
             {message?.text}
@@ -61,16 +61,18 @@ const ChatBubble = ({ message, isMine }) => {
             </span>
           </div>
         ) : (
+          /* 👇 TEXT WRAP FIX YAHAN HAI */
           <div
-            className={`px-4 py-2.5 ${
+            className={`px-4 py-2.5 shadow-sm ${
               isMine ? "chat-bubble-sent" : "chat-bubble-received"
-            } shadow-sm`}
+            } 
+            break-words overflow-wrap-anywhere whitespace-pre-wrap flex flex-col`}
           >
-            <p className="text-sm font-body leading-relaxed text-foreground">
+            <p className="text-sm font-body leading-relaxed text-foreground break-words overflow-hidden">
               {message?.text}
             </p>
-            <span className="text-[10px] text-muted-foreground mt-1 block text-right">
-              {message?.timestamp}
+            <span className="text-[10px] text-muted-foreground mt-1 block text-right self-end">
+              {message?.timestamp || new Date(message?.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
             </span>
           </div>
         )}

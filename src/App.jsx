@@ -15,10 +15,12 @@ import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import { AuthProvider } from "./contexts/AuthContext";
 import { FriendProvider } from "./contexts/FriendContext";
-import {SocketContextProvider} from "./contexts/SocketContext"
+import { SocketContextProvider } from "./contexts/SocketContext"
 import notifications from "./pages/Notifications";
 import Verify from "./pages/Verify"
 import Notifications from "./pages/Notifications";
+import { ChatProvider } from "./contexts/ChatContext";
+import { UserProvider } from "./contexts/UserContext";
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }) => {
@@ -34,43 +36,47 @@ const ProtectedRoute = ({ children }) => {
 const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <SocketContextProvider>
-       <FriendProvider>
-        <ThemeProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <ParticleBackground />
+      <AuthProvider> 
+        <SocketContextProvider> 
+          <UserProvider>
+            <FriendProvider> 
+              <ChatProvider>
+                <ThemeProvider>
+                  <TooltipProvider>
+                    <Toaster />
+                    <Sonner />
+                    <ParticleBackground />
 
-            <BrowserRouter>
-              <Routes>
-                {/* Auth Route */}
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/verify/:token" element={<Verify />} />
+                    <BrowserRouter>
+                      <Routes>
+                        {/* Auth Route */}
+                        <Route path="/auth" element={<Auth />} />
+                        <Route path="/verify/:token" element={<Verify />} />
 
-                {/* Protected Routes */}
-                <Route
-                  element={
-                    <ProtectedRoute>
-                      <AppLayout />
-                    </ProtectedRoute>
-                  }
-                >
-                  <Route path="/" element={<ChatView />} />
-                  <Route path="/chat/:chatId" element={<ChatView />} />
-                  <Route path="/games" element={<Games />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/notifications" element={<Notifications/>}/>
-                </Route>
+                        {/* Protected Routes */}
+                        <Route
+                          element={
+                            <ProtectedRoute>
+                              <AppLayout />
+                            </ProtectedRoute>
+                          }
+                        >
+                          <Route path="/" element={<ChatView />} />
+                          <Route path="/chat/:chatId" element={<ChatView />} />
+                          <Route path="/games" element={<Games />} />
+                          <Route path="/profile" element={<Profile />} />
+                          <Route path="/notifications" element={<Notifications />} />
+                        </Route>
 
-                {/* 404 */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
-        </ThemeProvider>
-        </FriendProvider>
+                        {/* 404 */}
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </BrowserRouter>
+                  </TooltipProvider>
+                </ThemeProvider>
+              </ChatProvider>
+            </FriendProvider>
+          </UserProvider>
         </SocketContextProvider>
       </AuthProvider>
     </QueryClientProvider>
