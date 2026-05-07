@@ -3,6 +3,7 @@ import { chatService } from "../Api/chatService";
 import { useSocket } from "./SocketContext";
 import { useAuth } from "./AuthContext";
 import { toast } from "sonner";
+import { Users } from "lucide-react";
 
 const ChatContext = createContext();
 
@@ -12,9 +13,6 @@ export const ChatProvider = ({ children }) => {
   const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-
-
-  // Audio Setup: Inhe useMemo mein dala hai taaki performance badiya rahe
   const sendSound = useMemo(() => new Audio("/sounds/send.mp3"), []);
   const receiveSound = useMemo(() => new Audio("/sounds/main.mp3"), []);
 
@@ -22,7 +20,7 @@ export const ChatProvider = ({ children }) => {
   const playNotificationSound = useCallback((type) => {
     try {
       if (type === "send") {
-        sendSound.currentTime = 0; // Taaki click karte hi turant baje
+        sendSound.currentTime = 0;
         sendSound.play().catch(e => console.log("Audio play error:", e));
       } else {
         receiveSound.currentTime = 0;
@@ -32,7 +30,7 @@ export const ChatProvider = ({ children }) => {
       console.error("Sound play failed:", err);
     }
   }, [sendSound, receiveSound]);
-  //  1. Ref ka use karenge stale closure se bachne ke liye
+
   const selectedUserRef = useRef(null);
   useEffect(() => {
     selectedUserRef.current = selectedUser;
@@ -50,6 +48,7 @@ export const ChatProvider = ({ children }) => {
     }
   }, []);
 
+  // fatch Users
   const fetchAllUsers = useCallback(async () => {
     setLoading(true);
     try {
@@ -62,19 +61,26 @@ export const ChatProvider = ({ children }) => {
     }
   }, []);
 
+  // fatch msg
   const fetchMessages = useCallback(async (userId) => {
     if (!userId) return;
+    
+  
+    setMessages([]); 
     setLoading(true);
+
     try {
       const data = await chatService.getMessages(userId);
       setMessages(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error fetching messages:", error);
+      toast.error("Failed to load messages");
     } finally {
       setLoading(false);
     }
   }, []);
 
+  // msg send
   const sendNewMessage = async (userId, messageData) => {
     try {
       const data = await chatService.sendMessage(userId, messageData);
@@ -82,7 +88,7 @@ export const ChatProvider = ({ children }) => {
       playNotificationSound("send");
 
       setMessages((prev) => {
-        //  Check agar message ID pehle se hai (Optimistic update ya socket ki wajah se)
+      
         const exists = prev.some((m) => m._id === data._id);
         if (exists) return prev;
         return [...prev, data];
@@ -95,32 +101,31 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
-  //  2. YAHI HAI REAL-TIME KA ASLI FIX
-  // ChatContext.jsx ke andar ka logic change karo
+//  masg headling
   useEffect(() => {
     if (!socket) return;
 
     const handleNewMessage = (newMessage) => {
       const isFromMe = newMessage.senderId === currentUser?._id;
 
-      // 1. Messages list update (Chat window ke liye)
+
       setMessages((prev) => [...prev, newMessage]);
 
-      // 2. Sidebar update (Notification increment logic)
+
       setConversations((prevConv) => {
         return prevConv.map((conv) => {
-          // Check karo ki ye message isi user se hai ya isi user ke liye hai
+    
           const isTargetConv = conv._id === newMessage.senderId || conv._id === newMessage.receiverId;
 
           if (isTargetConv) {
-            // Condition: Agar chat open NAHI hai AND message doosre ne bheja hai
+       
             const isChatOpen = selectedUserRef.current?._id === newMessage.senderId;
             const shouldIncrement = !isFromMe && !isChatOpen;
 
             return {
               ...conv,
               lastMessage: newMessage.message,
-              // 🔥 Ye line 1 pe 1, 2 pe 2 dikhayegi
+          
               unreadCount: shouldIncrement
                 ? (Number(conv.unreadCount) || 0) + 1
                 : 0,

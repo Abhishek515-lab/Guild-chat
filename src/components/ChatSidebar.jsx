@@ -38,7 +38,7 @@ const ChatSidebar = () => {
 
   const navigationTabs = [
     { key: "chats", label: "Chats" },
-    { key: "groups", label: "Groups" },
+    { key: "Guild", label: "Guild" },
     { key: "friends", label: "Friends" },
     { key: "games", label: "Games" },
   ];
@@ -114,7 +114,7 @@ const ChatSidebar = () => {
           />
         </div>
 
-        <nav className="flex gap-1 p-1 rounded-xl bg-muted/40">
+        <nav className="flex gap-1 p-1 rounded-xl anime-gradient text-white">
           {navigationTabs.map((t) => (
             <button
               key={t.key}

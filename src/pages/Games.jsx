@@ -5,11 +5,13 @@ import { useNavigate } from "react-router-dom";
 
 import TicTacToe from "../components/games/TicTacToe";
 import ChessGame from "../components/games/ChessGame";
+import ConnectFour from "../components/games/ConnectFour";
 import { useIsMobile } from "../hooks/use-mobile";
 
 const games = [
   { id: "tictactoe", name: "Tic-Tac-Toe", icon: Grid3X3, desc: "Classic X vs O" },
   { id: "chess", name: "Chess", icon: Crown, desc: "Strategy battle" },
+  { id: "ConnectFour", name: "ConnectFour", icon: Crown, desc: "Strategy battle" },
 ];
 
 const Games = () => {

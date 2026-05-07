@@ -97,7 +97,6 @@ const ChessGame = () => {
           }));
         }
         newBoard[row][col] = newBoard[selected[0]][selected[1]];
-        // Pawn promotion
         if (newBoard[row][col]?.type === "P" && (row === 0 || row === 7)) {
           newBoard[row][col] = { type: "Q", color: turn };
         }
@@ -135,13 +134,13 @@ const ChessGame = () => {
         {gameOver ? `🎉 ${gameOver} Wins!` : `Turn: ${turn === "w" ? "⬜ White" : "⬛ Black"}`}
       </div>
 
-      {/* Captured pieces */}
       <div className="flex gap-4 text-xs">
         <span className="text-muted-foreground">⬜ {captured.w.join("")}</span>
         <span className="text-muted-foreground">⬛ {captured.b.join("")}</span>
       </div>
 
-      <div className="rounded-xl overflow-hidden shadow-lg border border-border">
+      {/* Main Board Container with outer border */}
+      <div className="rounded-sm overflow-hidden shadow-2xl border-2 border-primary/20">
         {board.map((row, r) => (
           <div key={r} className="flex">
             {row.map((cell, c) => {
@@ -153,21 +152,22 @@ const ChessGame = () => {
               return (
                 <motion.button
                   key={`${r}-${c}`}
-                  whileTap={{ scale: 0.9 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => handleClick(r, c)}
-                  className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-lg sm:text-xl relative transition-colors ${
+                  // Added border-t, border-l to cells for internal grid visibility
+                  className={`w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center text-xl sm:text-2xl relative transition-colors border-[0.5px] border-primary/10 ${
                     isSelected
-                      ? "bg-primary/40"
+                      ? "bg-primary/50"
                       : isLight
-                      ? "bg-muted/30"
-                      : "bg-muted/70"
-                  } ${isCapture ? "ring-2 ring-inset ring-destructive/50" : ""}`}
+                      ? "bg-[#ebecd0]" 
+                      : "bg-[#779556]"
+                  } ${isCapture ? "ring-2 ring-inset ring-red-500/80" : ""}`}
                 >
                   {isMove && !cell && (
-                    <div className="absolute w-2 h-2 rounded-full bg-primary/40" />
+                    <div className="absolute w-3 h-3 rounded-full bg-black/10" />
                   )}
                   {cell && (
-                    <span className={cell.color === "w" ? "text-foreground drop-shadow" : "text-foreground/70"}>
+                    <span className={`select-none ${cell.color === "w" ? "text-white drop-shadow-md" : "text-black/80"}`}>
                       {PIECES[cell.color + cell.type]}
                     </span>
                   )}

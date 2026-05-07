@@ -45,19 +45,21 @@ const TicTacToe = () => {
         {winner ? `🎉 ${winner.winner} Wins!` : isDraw ? "🤝 Draw!" : `Turn: ${xTurn ? "X" : "O"}`}
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      {/* Grid container with a subtle background or gap to help borders */}
+      <div className="grid grid-cols-3 gap-2 p-2 rounded-2xl bg-background border border-border shadow-inner">
         {board.map((cell, i) => (
           <motion.button
             key={i}
-            whileHover={!cell && !winner ? { scale: 1.05 } : {}}
+            whileHover={!cell && !winner ? { scale: 1.02 } : {}}
             whileTap={!cell && !winner ? { scale: 0.95 } : {}}
             onClick={() => handleClick(i)}
-            className={`w-16 h-16 sm:w-20 sm:h-20 rounded-xl text-2xl font-extrabold font-heading flex items-center justify-center transition-all ${
+            // 'border' aur 'border-border' classes add ki hain
+            className={`w-16 h-16 sm:w-20 sm:h-20 rounded-xl text-2xl font-extrabold font-heading flex items-center justify-center transition-all border-2 ${
               winLine?.includes(i)
-                ? "anime-gradient text-primary-foreground shadow-lg"
+                ? "anime-gradient text-primary-foreground shadow-lg border-transparent"
                 : cell
-                ? "bg-muted text-foreground"
-                : "bg-muted/40 hover:bg-muted/70 text-muted-foreground"
+                ? "bg-muted text-foreground border-border"
+                : "bg-muted/20 hover:bg-muted/40 text-muted-foreground border-border/50"
             }`}
           >
             {cell && (

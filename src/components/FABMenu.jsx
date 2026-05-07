@@ -9,7 +9,7 @@ const FABMenu = () => {
   const [showUserModal, setShowUserModal] = useState(false);
   const navigate = useNavigate(); // 2. Navigate initialize kiya
 
-  // 3. setSelectedUser ko destructure kiya
+
   const { fetchAllUsers, allUsers, fetchMessages, setSelectedUser } = useChat();
   const { friends, fetchFriends, loading: friendsLoading } = useFriends();
   const handleNewChatClick = async () => {
@@ -42,7 +42,7 @@ const FABMenu = () => {
                 <span className="px-3 py-1.5 rounded-lg bg-white/80 backdrop-blur-md text-xs font-bold shadow-sm">
                   {item.label}
                 </span>
-                <div className={`w-11 h-11 rounded-full bg-gradient-to-r ${item.color} shadow-lg flex items-center justify-center text-white`}>
+                <div className={`w-11 h-11 rounded-full anime-gradient ${item.color} shadow-lg flex items-center justify-center text-white`}>
                   <item.icon className="w-5 h-5" />
                 </div>
               </motion.button>
@@ -59,7 +59,7 @@ const FABMenu = () => {
 
       <AnimatePresence>
         {showUserModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -72,13 +72,13 @@ const FABMenu = () => {
               </div>
 
              <div className="max-h-[60vh] overflow-y-auto p-2 custom-scrollbar">
-                {/* 4. Ab allUsers ki jagah sirf friends.map use karo */}
+        
                 {friends && friends.length > 0 ? (
                   friends.map((friend) => (
                     <div
                       key={friend._id || friend.id}
                       onClick={() => {
-                        // User object ko format karo agar backend thoda alag data bhej raha hai
+                        
                         const chatUser = {
                           _id: friend._id || friend.id,
                           username: friend.username || friend.name,
@@ -92,7 +92,7 @@ const FABMenu = () => {
                       }}
                       className="flex items-center gap-3 p-3 hover:bg-pink-50 rounded-xl cursor-pointer transition-all active:scale-95"
                     >
-                      {/* AnimeAvatar ya normal img jo tumne banaya hai */}
+              
                       <img 
                         src={friend.profilePic || friend.avatar || "/avatar.png"} 
                         alt="" 

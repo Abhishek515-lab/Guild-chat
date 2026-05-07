@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import api from "../Api/axios"; // 👈 Make sure path sahi ho
+import api from "../Api/axios"; 
 import { toast } from "sonner";
 
 const FriendContext = createContext();

@@ -25,14 +25,14 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await loginUser(email, password);
 
-      // Axios response se data nikalna
+      // Axios response data 
       const data = response.data;
 
       if (!data || !data.token) {
         return { error: { message: "Server ne token nahi bheja!" } };
       }
 
-      // Sahi format mein data save karna (user + token)
+      //  (user + token)
       const userInfo = {
         ...data.user,
         token: data.token
@@ -94,8 +94,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // AuthContext.jsx ke andar
-  // AuthContext.jsx ke andar
+  // AuthContext.jsx
  const updateProfile = async (userData) => {
   try {
     const response = await api.put("/auth/profile", userData);
