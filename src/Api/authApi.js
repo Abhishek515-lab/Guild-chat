@@ -13,7 +13,7 @@ export const sendOTPApi = (email) => {
 };
 
 export const verifyOTPApi = (email, otp) => {
-  return api.post("/auth/verify-otp", { email, otp });
+  return api.post("/auth/send-otp", { email, otp });
 };
 
 
