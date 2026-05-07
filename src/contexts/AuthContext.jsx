@@ -10,8 +10,8 @@ import api from "../Api/axios";
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  // State initialization: 
   const [user, setUser] = useState(() => {
+    // Hamesha 'userInfo' use karein consistency ke liye
     const savedUser = localStorage.getItem("userInfo");
     try {
       return savedUser ? JSON.parse(savedUser) : null;
@@ -20,30 +20,22 @@ export const AuthProvider = ({ children }) => {
     }
   });
 
-  // LOGIN logic
   const signIn = async (email, password) => {
     try {
-      const response = await loginUser(email, password);
-
-      // Axios response data 
-      const data = response.data;
+      const data = await loginUser(email, password); // API file already returns .data
 
       if (!data || !data.token) {
-        return { error: { message: "Server ne token nahi bheja!" } };
+        return { error: { message: "Server error: Token missing" } };
       }
 
-      //  (user + token)
-      const userInfo = {
-        ...data.user,
-        token: data.token
-      };
-
+      const userInfo = { ...data.user, token: data.token };
       localStorage.setItem("userInfo", JSON.stringify(userInfo));
+      // Axios interceptor ke liye bhi alag se token rakh sakte hain agar zaroorat ho
+      localStorage.setItem("token", data.token); 
+      
       setUser(userInfo);
-
       return { data: userInfo, error: null };
     } catch (error) {
-      console.error("Login Error:", error);
       return { error: error.response?.data || { message: "Login failed" } };
     }
   };
@@ -69,25 +61,20 @@ export const AuthProvider = ({ children }) => {
   };
 
   // FINAL SIGNUP
-  const signUp = async (userData) => {
+ const signUp = async (userData) => {
     try {
-      const response = await registerUser(userData);
-      const data = response.data;
+      const data = await registerUser(userData);
 
       if (!data || !data.token) {
         return { error: { message: "Signup successful but token missing" } };
       }
 
-
-      const userInfo = {
-        ...userData,
-        ...data.user,
-        token: data.token
-      };
-
+      // password hatane ke liye sirf backend ka data lo
+      const userInfo = { ...data.user, token: data.token };
       localStorage.setItem("userInfo", JSON.stringify(userInfo));
-      setUser(userInfo); // State update!
+      localStorage.setItem("token", data.token);
 
+      setUser(userInfo);
       return { data: userInfo, error: null };
     } catch (error) {
       return { error: error.response?.data || { message: "Signup failed" } };
