@@ -31,8 +31,8 @@ export const AuthProvider = ({ children }) => {
       const userInfo = { ...data.user, token: data.token };
       localStorage.setItem("userInfo", JSON.stringify(userInfo));
       // Axios interceptor ke liye bhi alag se token rakh sakte hain agar zaroorat ho
-      localStorage.setItem("token", data.token); 
-      
+      localStorage.setItem("token", data.token);
+
       setUser(userInfo);
       return { data: userInfo, error: null };
     } catch (error) {
@@ -61,7 +61,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   // FINAL SIGNUP
- const signUp = async (userData) => {
+  const signUp = async (userData) => {
     try {
       const data = await registerUser(userData);
 
@@ -82,31 +82,32 @@ export const AuthProvider = ({ children }) => {
   };
 
   // AuthContext.jsx
- const updateProfile = async (userData) => {
-  try {
-    const response = await api.put("/auth/profile", userData);
+  const updateProfile = async (userData) => {
+    try {
+      const response = await api.put("/auth/profile", userData);
 
-    const updatedUser = response.data; //  FIXED
+      const updatedUser = response.data; //  FIXED
 
-    const newUserInfo = { ...user, ...updatedUser };
+      const newUserInfo = { ...user, ...updatedUser };
 
-    localStorage.setItem("userInfo", JSON.stringify(newUserInfo));
-    setUser(newUserInfo);
+      localStorage.setItem("userInfo", JSON.stringify(newUserInfo));
+      setUser(newUserInfo);
 
-    return { success: true, data: updatedUser };
+      return { success: true, data: updatedUser };
 
-  } catch (error) {
-    console.error("PROFILE UPDATE ERROR:", error.response || error);
+    } catch (error) {
+      console.error("PROFILE UPDATE ERROR:", error.response || error);
 
-    return {
-      success: false,
-      error: error.response?.data?.message || "Update failed",
-    };
-  }
-};
+      return {
+        success: false,
+        error: error.response?.data?.message || "Update failed",
+      };
+    }
+  };
   // LOGOUT
   const logout = () => {
     localStorage.removeItem("userInfo");
+    localStorage.removeItem("token");
     setUser(null);
   };
 
