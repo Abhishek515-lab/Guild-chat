@@ -1,23 +1,31 @@
 import api from "./axios";
 
-export const loginUser = (email, password) => {
-  return api.post("/auth/login", { email, password });
+// Helper to handle data return consistently
+const handleResponse = (response) => response.data;
+
+export const loginUser = async (email, password) => {
+  const response = await api.post("/auth/login", { email, password });
+  return response.data; // Data direct return karne se components mein kaam aasaan ho jata hai
 };
 
-export const registerUser = (userData) => {
-  return api.post("/auth/register", userData);
+export const registerUser = async (userData) => {
+  const response = await api.post("/auth/register", userData);
+  return response.data;
 };
 
-export const sendOTPApi = (email) => {
-  return api.post("/auth/send-otp", { email });
+export const sendOTPApi = async (email) => {
+  const response = await api.post("/auth/send-otp", { email });
+  return response.data;
 };
 
-// FIX: Yahan /send-otp ki jagah /verify-otp aayega
-export const verifyOTPApi = (email, otp) => {
-  return api.post("/auth/verify-otp", { email, otp });
+export const verifyOTPApi = async (email, otp) => {
+  // Fix confirmed: /verify-otp is the correct endpoint
+  const response = await api.post("/auth/verify-otp", { email, otp });
+  return response.data;
 };
 
-export const updateProfileApi = (userData) => {
-  // Axios baseURL mein /api pehle se hai, isliye yahan sirf /auth/profile kaafi hai
-  return api.put("/auth/profile", userData);
+export const updateProfileApi = async (userData) => {
+  // Note: Ensure backend expects PUT and the route is /api/auth/profile
+  const response = await api.put("/auth/profile", userData);
+  return response.data;
 };
