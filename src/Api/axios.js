@@ -11,32 +11,30 @@ const api = axios.create({
 });
 
 // 2. Request Interceptor (Token attach karne ke liye)
+// 2. Request Interceptor
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      // Direct assignment safe hai
-      config.headers.Authorization = `Bearer ${token}`;
+    // userInfo se token nikaalo (kyunki aapne Context mein yahi save kiya hai)
+    const savedData = localStorage.getItem("userInfo");
+    if (savedData) {
+      const { token } = JSON.parse(savedData);
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// 3. Response Interceptor (Error handle karne ke liye)
+// 3. Response Interceptor
 api.interceptors.response.use(
-  (response) => response, // Agar success hai toh data return karo
+  (response) => response,
   (error) => {
-    // Agar 401 (Unauthorized) aata hai, matlab token expire ho gaya
     if (error.response && error.response.status === 401) {
-      console.error("Session expired or unauthorized. Logging out...");
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      
-      // Optional: User ko login page par redirect kar sakte hain
-      // window.location.href = "/auth"; 
+      console.error("Session expired. Clearing storage...");
+      localStorage.removeItem("userInfo"); // Sahi key remove karo
+      // window.location.href = "/auth";
     }
     return Promise.reject(error);
   }
