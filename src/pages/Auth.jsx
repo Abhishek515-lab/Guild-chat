@@ -69,22 +69,28 @@ const Auth = () => {
 
   // ---------- SEND OTP ----------
   const handleSendOTP = async () => {
-    try {
-      setLoading(true);
+  if (!email) {
+    toast.error("Email is required");
+    return;
+  }
 
-      const { error } = await sendOTP(email);
+  try {
+    setLoading(true);
 
-      if (error) {
-        toast.error(error.message);
-        return;
-      }
+    const { error } = await sendOTP(email);
 
-      toast.success("OTP sent to your email");
-      setStep(3);
-    } finally {
-      setLoading(false);
+    if (error) {
+      toast.error(error.message);
+      return;
     }
-  };
+
+    toast.success("OTP sent to your email");
+    setStep(3);
+
+  } finally {
+    setLoading(false);
+  }
+};
 
   // ---------- VERIFY OTP ----------
   const handleVerifyOTP = async () => {

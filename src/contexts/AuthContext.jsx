@@ -47,13 +47,18 @@ export const AuthProvider = ({ children }) => {
 
   // SEND OTP
   const sendOTP = async (email) => {
-    try {
-      await sendOTPApi(email);
-      return { error: null };
-    } catch (error) {
-      return { error: error.response?.data || { message: "Failed to send OTP" } };
+  try {
+    if (!email) {
+      return { error: { message: "Email is required" } };
     }
-  };
+
+    const response = await sendOTPApi(email);
+    return { data: response, error: null };
+
+  } catch (error) {
+    return { error: error.response?.data || { message: "Failed to send OTP" } };
+  }
+};
 
   // VERIFY OTP
   const verifyEmail = async (email, otp) => {
