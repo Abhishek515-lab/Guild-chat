@@ -69,18 +69,22 @@ const Auth = () => {
 
   // ---------- SEND OTP ----------
   const handleSendOTP = async () => {
-  try {
-    setLoading(true);
-    const { error } = await sendOTP(email);
-    if (error) throw error;
-    toast.success("OTP sent!");
-    setStep(3);
-  } catch (err) {
-    toast.error(err.message || "OTP failed");
-  } finally {
-    setLoading(false); // Ye button ko hamesha reset karega
-  }
-};
+    try {
+      setLoading(true);
+
+      const { error } = await sendOTP(email);
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      toast.success("OTP sent to your email");
+      setStep(3);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // ---------- VERIFY OTP ----------
   const handleVerifyOTP = async () => {

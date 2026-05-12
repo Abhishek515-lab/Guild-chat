@@ -10,8 +10,8 @@ import api from "../Api/axios";
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
+  // State initialization: 
   const [user, setUser] = useState(() => {
-    // Hamesha 'userInfo' use karein consistency ke liye
     const savedUser = localStorage.getItem("userInfo");
     try {
       return savedUser ? JSON.parse(savedUser) : null;
@@ -20,20 +20,25 @@ export const AuthProvider = ({ children }) => {
     }
   });
 
+  // LOGIN logic
   const signIn = async (email, password) => {
     try {
-      const data = await loginUser(email, password); // API file already returns .data
+      const response = await loginUser(email, password);
+
+      // Yahan Console karke dekho backend kya bhej raha hai
+      console.log("Backend Response:", response);
+
+      // Agar response direct data hai (kyunki api.js mein .data return ho chuka hai)
+      const data = response;
 
       if (!data || !data.token) {
-        return { error: { message: "Server error: Token missing" } };
+        return { error: { message: "Server ne token nahi bheja!" } };
       }
 
       const userInfo = { ...data.user, token: data.token };
       localStorage.setItem("userInfo", JSON.stringify(userInfo));
-      // Axios interceptor ke liye bhi alag se token rakh sakte hain agar zaroorat ho
-      localStorage.setItem("token", data.token);
-
       setUser(userInfo);
+
       return { data: userInfo, error: null };
     } catch (error) {
       return { error: error.response?.data || { message: "Login failed" } };
@@ -61,26 +66,32 @@ export const AuthProvider = ({ children }) => {
   };
 
   // FINAL SIGNUP
-  const signUp = async (userData) => {
-    try {
-      const data = await registerUser(userData);
+ const signUp = async (userData) => {
+  try {
+    const response = await registerUser(userData);
+    
+    // YAHAN FIX HAI: registerUser pehle hi data bhej raha hai
+    const data = response; 
 
-      if (!data || !data.token) {
-        return { error: { message: "Signup successful but token missing" } };
-      }
-
-      // password hatane ke liye sirf backend ka data lo
-      const userInfo = { ...data.user, token: data.token };
-      localStorage.setItem("userInfo", JSON.stringify(userInfo));
-      localStorage.setItem("token", data.token);
-
-      setUser(userInfo);
-      return { data: userInfo, error: null };
-    } catch (error) {
-      return { error: error.response?.data || { message: "Signup failed" } };
+    if (!data || !data.token) {
+      // Agar backend se account ban gaya par token nahi aaya
+      return { error: { message: "Account toh ban gaya par login nahi ho paya (No Token)" } };
     }
-  };
 
+    const userInfo = {
+      ...data.user,
+      token: data.token
+    };
+
+    localStorage.setItem("userInfo", JSON.stringify(userInfo));
+    setUser(userInfo);
+
+    return { data: userInfo, error: null };
+  } catch (error) {
+    // Backend se error message nikaalne ke liye
+    return { error: error.response?.data || { message: "Signup failed" } };
+  }
+};
   // AuthContext.jsx
   const updateProfile = async (userData) => {
     try {
@@ -107,7 +118,6 @@ export const AuthProvider = ({ children }) => {
   // LOGOUT
   const logout = () => {
     localStorage.removeItem("userInfo");
-    localStorage.removeItem("token");
     setUser(null);
   };
 
