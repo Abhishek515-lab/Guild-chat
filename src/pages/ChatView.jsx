@@ -1,10 +1,9 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowLeft, Phone, Video, Smile, Send, Sparkles,
+  ArrowLeft, Phone, Video, Smile, Send,
   MoreVertical, Mic, Image, MapPin, UserPlus,
-  Music, Trash2, Edit2, Copy, X
-  , Plus,
+  Music, Trash2, Edit2, Copy, X, Plus
 } from "lucide-react";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { toast } from "sonner";
@@ -37,7 +36,7 @@ const ChatView = () => {
   const [showStickers, setShowStickers] = useState(false);
   const [showMediaMenu, setShowMediaMenu] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const [selectedMsgId, setSelectedMsgId] = useState(null); // For CRUD actions
+  const [selectedMsgId, setSelectedMsgId] = useState(null);
 
   const bottomRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -46,7 +45,7 @@ const ChatView = () => {
     return friends?.find(f => f._id === userId);
   }, [userId, friends]);
 
-  // Sync Context & Fetch
+  // FIXED: Sync Context & Fetch (Dependency Array Cleaned up)
   useEffect(() => {
     if (userId && selectedFriend) {
       setSelectedUser(selectedFriend);
@@ -54,9 +53,10 @@ const ChatView = () => {
     }
     return () => {
       setSelectedUser(null);
-      setMessages([]); // Cleanup on unmount to prevent flickering
+      setMessages([]); // Cleanup on unmount
     };
-  }, [userId, selectedFriend, setSelectedUser, fetchMessages, setMessages]);
+    // केवल userId और selectedFriend बदलने पर ही दोबारा रन होगा
+  }, [userId, selectedFriend]); 
 
   // Auto Scroll
   useEffect(() => {
@@ -66,11 +66,16 @@ const ChatView = () => {
   // Socket Listeners
   useEffect(() => {
     if (!socket || !userId) return;
-    socket.on("displayTyping", ({ senderId }) => senderId === userId && setIsTyping(true));
-    socket.on("hideTyping", ({ senderId }) => senderId === userId && setIsTyping(false));
+    
+    const handleDisplayTyping = ({ senderId }) => senderId === userId && setIsTyping(true);
+    const handleHideTyping = ({ senderId }) => senderId === userId && setIsTyping(false);
+
+    socket.on("displayTyping", handleDisplayTyping);
+    socket.on("hideTyping", handleHideTyping);
+    
     return () => {
-      socket.off("displayTyping");
-      socket.off("hideTyping");
+      socket.off("displayTyping", handleDisplayTyping);
+      socket.off("hideTyping", handleHideTyping);
     };
   }, [socket, userId]);
 
@@ -152,7 +157,7 @@ const ChatView = () => {
         </div>
       </header>
 
-      {/* Chat Messages - Overflow X Fix Applied */}
+      {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 custom-scrollbar overflow-x-hidden">
         <ChatMascot emotion={otherEmotion} />
         {messages.map((msg) => (
@@ -202,9 +207,7 @@ const ChatView = () => {
           onSelect={(s) => handleSend(s, 'sticker')}
         />
 
-        {/* Multimedia Menu Popup */}
-
-        {/* Multimedia Menu (The Inventory) */}
+        {/* Multimedia Menu */}
         <AnimatePresence>
           {showMediaMenu && (
             <motion.div
@@ -236,25 +239,17 @@ const ChatView = () => {
         </AnimatePresence>
 
         <div className="flex items-center gap-2 max-w-4xl mx-auto">
-          {/* Media Toggle Button */}
-          <button
+          {/* FIXED: Removed duplicate nested button wrapper */}
+          <motion.button
+            whileTap={{ scale: 0.9 }}
             onClick={() => setShowMediaMenu(!showMediaMenu)}
-            className={` transition-all hover:bg-primary/10 ${showMediaMenu ? 'rotate-45 text-primary' : 'text-muted-foreground'}`}
+            className={`p-2 rounded-2xl transition-all duration-300 shadow-md ${showMediaMenu
+              ? 'bg-primary text-white rotate-45'
+              : 'bg-muted/80 text-muted-foreground hover:text-primary hover:bg-primary/10'
+              }`}
           >
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setShowMediaMenu(!showMediaMenu)}
-              className={`p-2 rounded-2xl transition-all duration-300 shadow-md ${showMediaMenu
-                ? 'bg-primary text-white rotate-45'
-                : 'bg-muted/80 text-muted-foreground hover:text-primary hover:bg-primary/10'
-                }`}
-            >
-              {/* Plus icon jo bag/inventory open karne ka kaam karega */}
-              <Plus className="w-4 h-4" />
-            </motion.button>
-
-            {/* <Sparkles className="w-6 h-6" /> */}
-          </button>
+            <Plus className="w-4 h-4" />
+          </motion.button>
 
           <div className="flex items-center gap-2 bg-muted/50 rounded-2xl px-3 py-1 flex-1 border border-white/5 focus-within:border-primary/30 transition-all shadow-inner">
             <Smile
