@@ -47,6 +47,7 @@ const Auth = () => {
     e.preventDefault();
     try {
       setLoading(true);
+
       const { data, error } = await signIn(email, password);
 
       if (error) {
@@ -55,8 +56,11 @@ const Auth = () => {
         if (data && data.token) {
           localStorage.setItem("token", data.token);
           localStorage.setItem("user", JSON.stringify(data.user));
+
           toast.success("Welcome back! 👋");
-          navigate("/");
+
+
+          window.location.href = "/";
         } else {
           toast.error("Login failed: Token not received");
         }
@@ -111,6 +115,7 @@ const Auth = () => {
       toast.error("Passwords do not match");
       return;
     }
+
     try {
       setLoading(true);
       const { data, error } = await signUp({
@@ -125,28 +130,31 @@ const Auth = () => {
         toast.error(error.message);
         return;
       }
+
       toast.success("Account created successfully! 🎉");
-      navigate("/");
+
+     
+      window.location.href = "/";
+
     } catch (err) {
       toast.error("Something went wrong");
     } finally {
       setLoading(false);
     }
   };
-
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-background/50 px-6">
-      
+
 
       {/* GLOSSY BOX CONTAINER */}
       <div className="w-full max-w-md bg-white/30 backdrop-blur-md border border-white/40 p-8 rounded-3xl shadow-xl flex flex-col items-center">
-        
+
         {/* ---------------- LOGIN ---------------- */}
         {isLogin && (
           <form onSubmit={handleLogin} className="w-full space-y-4">
             <h1 className="text-5xl text-center font-black text-black mb-8 tracking-tight">
-        GuildChat
-      </h1>
+              GuildChat
+            </h1>
             <input
               type="email"
               placeholder="Email"
@@ -188,7 +196,7 @@ const Auth = () => {
         {/* ---------------- SIGNUP FLOW ---------------- */}
         {!isLogin && (
           <div className="w-full space-y-4 flex flex-col">
-            
+
             {/* STEP 1 - Name */}
             {step === 1 && (
               <>
