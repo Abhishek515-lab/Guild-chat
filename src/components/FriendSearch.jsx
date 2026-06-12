@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, UserPlus, Check, X, Loader2, MessageSquare, User } from "lucide-react";
 import AnimeAvatar from "./AnimeAvatar";
 import { toast } from "sonner";
-import api from "../Api/axios"; // 👈 'api' instance use karein
+import api from "../Api/axios";
 import { useFriends } from "../contexts/FriendContext";
 import { useNavigate } from "react-router-dom";
 
@@ -12,22 +12,23 @@ const FriendSearch = () => {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const { sendRequest, pendingRequests, friends } = useFriends();
-
-  const savedUser = localStorage.getItem("userInfo");
-  const userInfo = savedUser ? JSON.parse(savedUser) : null;
-  const currentUserId = userInfo?._id || userInfo?.id;
-  
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const searchUsers = async () => {
-      if (!query.trim()) {
-        setResults([]);
-        setLoading(false);
-        return;
-      }
+  const currentUserId = useMemo(() => {
+    const savedUser = localStorage.getItem("userInfo");
+    const userInfo = savedUser ? JSON.parse(savedUser) : null;
+    return userInfo?._id || userInfo?.id;
+  }, []);
 
-      setLoading(true);
+  useEffect(() => {
+    if (!query.trim()) {
+      setResults([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    const searchUsers = async () => {
       try {
         const res = await api.get(`/users/search?q=${query}`);
         setResults(res.data);
@@ -39,19 +40,21 @@ const FriendSearch = () => {
       }
     };
 
-    const timeoutId = setTimeout(searchUsers, 500);
+    const timeoutId = setTimeout(searchUsers, 400);
     return () => clearTimeout(timeoutId);
   }, [query]);
 
-  const handleAddFriend = async (userId, userName) => {
+  const handleAddFriend = useCallback(async (userId, userName) => {
     try {
       await sendRequest(userId);
-      // Agar userName undefined hua toh 'Nakama' dikhayega
       toast.success(`Request sent to ${userName || "Nakama"}! 🌸`);
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to send request");
     }
-  };
+  }, [sendRequest]);
+
+  const clearQuery = useCallback(() => setQuery(""), []);
+  const handleInputChange = useCallback((e) => setQuery(e.target.value), []);
 
   return (
     <div className="flex flex-col h-full px-3 pt-3 overflow-hidden">
@@ -59,14 +62,14 @@ const FriendSearch = () => {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <input
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={handleInputChange}
           placeholder="Find your nakama..."
           className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-muted/60 text-sm font-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all border border-transparent focus:border-primary/20"
         />
         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
           {loading && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
           {query && !loading && (
-            <button onClick={() => setQuery("")} className="text-muted-foreground hover:text-foreground transition-colors">
+            <button onClick={clearQuery} className="text-muted-foreground hover:text-foreground transition-colors">
               <X className="w-4 h-4" />
             </button>
           )}
@@ -121,7 +124,6 @@ const FriendSearch = () => {
                           <motion.button
                             whileHover={{ scale: 1.1 }} 
                             whileTap={{ scale: 0.9 }}
-                            // 👈 FIX: Dono userId aur userName pass kiya yahan
                             onClick={() => !isPending && handleAddFriend(user._id, user.username)}
                             disabled={isPending}
                             className={`p-2 rounded-full transition-all shadow-sm ${isPending ? "bg-secondary text-muted-foreground" : "bg-primary text-primary-foreground"}`}
@@ -145,27 +147,30 @@ const FriendSearch = () => {
                 My Friends ({friends?.length || 0})
               </p>
               {friends?.length > 0 ? (
-                friends.map((friend, index) => (
-                  <div key={`${friend._id || friend.id}-${index}`} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-muted/20 transition-all group">
-                    <AnimeAvatar src={friend.avatar} name={friend.name || friend.username} size="sm" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-heading font-bold">{friend.name || friend.username}</p>
-                      <div className="flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                        <span className="text-[9px] text-muted-foreground uppercase">Online</span>
+                friends.map((friend) => {
+                  const targetId = friend._id || friend.id;
+                  return (
+                    <div key={targetId} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-muted/20 transition-all group">
+                      <AnimeAvatar src={friend.avatar} name={friend.name || friend.username} size="sm" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-heading font-bold">{friend.name || friend.username}</p>
+                        <div className="flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                          <span className="text-[9px] text-muted-foreground uppercase">Online</span>
+                        </div>
                       </div>
-                    </div>
 
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => navigate(`/chat/${friend._id || friend.id}`)}
-                      className="p-2 opacity-0 group-hover:opacity-100 transition-opacity text-primary hover:bg-primary/10 rounded-full"
-                    >
-                      <MessageSquare className="w-4 h-4" />
-                    </motion.button>
-                  </div>
-                ))
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => navigate(`/chat/${targetId}`)}
+                        className="p-2 opacity-0 group-hover:opacity-100 transition-opacity text-primary hover:bg-primary/10 rounded-full"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                      </motion.button>
+                    </div>
+                  );
+                })
               ) : (
                 <div className="text-center py-8">
                   <p className="text-xs text-muted-foreground">No friends yet. Start searching! ✨</p>

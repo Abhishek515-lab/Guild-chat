@@ -1,13 +1,8 @@
-import { createContext, useContext, useState, useCallback, useEffect } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useMemo } from "react";
 
-const ThemeContext = createContext({
-  theme: "sakura",
-  setTheme: () => {},
-});
+const ThemeContext = createContext(null);
 
-export const useTheme = () => useContext(ThemeContext);
-
-const themeClassMap = {
+const THEME_CLASS_MAP = {
   sakura: "",
   neon: "theme-neon",
   rainy: "theme-rainy",
@@ -22,33 +17,44 @@ export const ThemeProvider = ({ children }) => {
     return localStorage.getItem("app-theme") || "sakura";
   });
 
-  const applyThemeClass = (t) => {
+  const applyThemeClass = useCallback((targetTheme) => {
     const root = document.documentElement;
 
-    // Remove old theme classes
-    Object.values(themeClassMap).forEach((cls) => {
+    Object.values(THEME_CLASS_MAP).forEach((cls) => {
       if (cls) root.classList.remove(cls);
     });
 
-    // Add new theme class
-    const cls = themeClassMap[t];
+    const cls = THEME_CLASS_MAP[targetTheme];
     if (cls) root.classList.add(cls);
-  };
+  }, []);
 
   const setTheme = useCallback((t) => {
+    if (!THEME_CLASS_MAP[t] && t !== "sakura") return;
     setThemeState(t);
     localStorage.setItem("app-theme", t);
     applyThemeClass(t);
-  }, []);
+  }, [applyThemeClass]);
 
-  // Apply theme on first load
   useEffect(() => {
     applyThemeClass(theme);
-  }, []);
+  }, [theme, applyThemeClass]);
+
+  const contextValue = useMemo(() => ({
+    theme,
+    setTheme
+  }), [theme, setTheme]);
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
+    <ThemeContext.Provider value={contextValue}>
       {children}
     </ThemeContext.Provider>
   );
+};
+
+export const useTheme = () => {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error("useTheme must be used within a ThemeProvider");
+  }
+  return context;
 };

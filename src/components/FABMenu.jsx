@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, MessageCircle, Users, Bot, X, Shield, Check, Search, ArrowRight, ArrowLeft, Camera } from "lucide-react";
-import { useState, useMemo } from "react";
+import { Plus, MessageCircle, Users, Bot, X, Shield, Check, Search, ArrowRight, Camera } from "lucide-react";
+import { useState, useMemo, useCallback } from "react";
 import { useChat } from "../contexts/ChatContext";
 import { useNavigate } from "react-router-dom";
 import { useFriends } from "../contexts/FriendContext";
@@ -19,10 +19,9 @@ const FABMenu = () => {
   const [selectedMembers, setSelectedMembers] = useState([]);
 
   const navigate = useNavigate();
-  const { setSelectedUser, setConversations } = useChat();
+  const { setSelectedUser, setConversations, fetchMessages } = useChat();
   const { friends } = useFriends();
 
-  // Search Logic
   const filteredFriendsForChat = useMemo(() => 
     friends?.filter(f => f.username?.toLowerCase().includes(userSearch.toLowerCase())), 
   [friends, userSearch]);
@@ -31,43 +30,62 @@ const FABMenu = () => {
     friends?.filter(f => f.username?.toLowerCase().includes(guildSearch.toLowerCase())), 
   [friends, guildSearch]);
 
-  const toggleMember = (id) => {
+  const toggleMember = useCallback((id) => {
     setSelectedMembers(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]);
-  };
+  }, []);
 
-  const handleCreateGuild = () => {
+  const resetGuildForm = useCallback(() => {
+    setShowGuildModal(false);
+    setStep(1);
+    setGuildName("");
+    setGuildDesc("");
+    setSelectedMembers([]);
+  }, []);
+
+  const handleCreateGuild = useCallback(() => {
     if (!guildName.trim()) return toast.error("Guild Name is required!");
+    
     const newGuild = {
       _id: Date.now().toString(),
       name: guildName,
+      username: guildName,
       description: guildDesc,
       members: selectedMembers,
       isGroup: true,
       updatedAt: new Date().toISOString(),
       lastMessage: "Guild formed! ⚔️"
     };
-    setConversations(prev => [newGuild, ...prev]);
+
+    if (setConversations) {
+      setConversations(prev => [newGuild, ...prev]);
+    }
+    
     toast.success(`${guildName} formed!`);
     resetGuildForm();
-  };
+  }, [guildName, guildDesc, selectedMembers, setConversations, resetGuildForm]);
 
-  const resetGuildForm = () => {
-    setShowGuildModal(false);
-    setStep(1);
-    setGuildName("");
-    setGuildDesc("");
-    setSelectedMembers([]);
-  };
+  const handleStartChat = useCallback((friend) => {
+    if (setSelectedUser) setSelectedUser(friend);
+    if (fetchMessages) fetchMessages(friend._id);
+    navigate(`/chat/${friend._id}`);
+    setShowUserModal(false);
+  }, [setSelectedUser, fetchMessages, navigate]);
 
-  const items = [
-    { icon: MessageCircle, label: "New Chat", className: "anime-gradient", onClick: () => { setOpen(false); setShowUserModal(true); } },
-    { icon: Users, label: "New Guild", className: "bg-primary", onClick: () => { setOpen(false); setShowGuildModal(true); } },
+  const toggleFabMenu = useCallback(() => setOpen(prev => !prev), []);
+  const openUserModal = useCallback(() => { setOpen(false); setShowUserModal(true); }, []);
+  const openGuildModal = useCallback(() => { setOpen(false); setShowGuildModal(true); }, []);
+  const closeUserModal = useCallback(() => setShowUserModal(false), []);
+  const setStepOne = useCallback(() => setStep(1), []);
+  const setStepTwo = useCallback(() => setStep(2), []);
+
+  const items = useMemo(() => [
+    { icon: MessageCircle, label: "New Chat", className: "anime-gradient", onClick: openUserModal },
+    { icon: Users, label: "New Guild", className: "bg-primary", onClick: openGuildModal },
     { icon: Bot, label: "AI Bot", className: "bg-secondary", onClick: () => {} },
-  ];
+  ], [openUserModal, openGuildModal]);
 
   return (
     <>
-      {/* FAB SECTION */}
       <div className="fixed bottom-6 right-6 z-[60] flex flex-col items-end gap-3">
         <AnimatePresence>
           {open && items.map((item, i) => (
@@ -84,17 +102,14 @@ const FABMenu = () => {
             </motion.button>
           ))}
         </AnimatePresence>
-        <button onClick={() => setOpen(!open)} className={`w-14 h-14 rounded-full shadow-xl flex items-center justify-center text-white anime-gradient transition-all duration-300 ${open ? 'bg-destructive rotate-45' : 'bg-primary shadow-primary/20'}`}>
+        <button onClick={toggleFabMenu} className={`w-14 h-14 rounded-full shadow-xl flex items-center justify-center text-white anime-gradient transition-all duration-300 ${open ? 'bg-destructive rotate-45' : 'bg-primary shadow-primary/20'}`}>
           <Plus className="w-7 h-7" />
         </button>
       </div>
 
-      {/* --- MODAL WRAPPER (Adaptive to Background) --- */}
       <AnimatePresence>
         {(showUserModal || showGuildModal) && (
           <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 backdrop-blur-md bg-black/10">
-            
-            {/* New Chat Modal */}
             {showUserModal && (
               <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
                 className="glass-panel w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden border border-white/20 bg-background/60"
@@ -103,7 +118,7 @@ const FABMenu = () => {
                   <h3 className="font-black uppercase tracking-tighter text-primary flex items-center gap-2">
                     <MessageCircle className="w-5 h-5" /> New Chat
                   </h3>
-                  <button onClick={() => setShowUserModal(false)} className="hover:rotate-90 transition-transform"><X className="w-5 h-5 opacity-50" /></button>
+                  <button onClick={closeUserModal} className="hover:rotate-90 transition-transform"><X className="w-5 h-5 opacity-50" /></button>
                 </div>
                 
                 <div className="p-4">
@@ -115,7 +130,7 @@ const FABMenu = () => {
 
                 <div className="max-h-[50vh] overflow-y-auto p-2 custom-scrollbar">
                   {filteredFriendsForChat?.map(friend => (
-                    <div key={friend._id} onClick={() => { setSelectedUser(friend); navigate(`/chat/${friend._id}`); setShowUserModal(false); }}
+                    <div key={friend._id} onClick={() => handleStartChat(friend)}
                       className="flex items-center gap-3 p-3 hover:bg-primary/10 rounded-2xl cursor-pointer transition-all border border-transparent hover:border-white/10"
                     >
                       <img src={friend.avatar || "/avatar.png"} className="w-12 h-12 rounded-full border-2 border-primary/20" />
@@ -129,7 +144,6 @@ const FABMenu = () => {
               </motion.div>
             )}
 
-            {/* New Guild Modal (2-Step) */}
             {showGuildModal && (
               <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }}
                 className="glass-panel w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden border border-white/20 bg-background/60"
@@ -160,7 +174,7 @@ const FABMenu = () => {
                           </div>
                         ))}
                       </div>
-                      <button disabled={selectedMembers.length === 0} onClick={() => setStep(2)}
+                      <button disabled={selectedMembers.length === 0} onClick={setStepTwo}
                         className="w-full py-4 rounded-2xl anime-gradient text-white font-black uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-30 shadow-xl"
                       >
                         Proceed <ArrowRight className="w-4 h-4" />
@@ -177,7 +191,7 @@ const FABMenu = () => {
                       <input type="text" placeholder="Guild Name" className="w-full px-5 py-4 bg-muted/20 rounded-2xl border border-white/10 focus:border-primary outline-none text-foreground font-bold" value={guildName} onChange={(e) => setGuildName(e.target.value)} />
                       <textarea placeholder="Slogan..." className="w-full px-5 py-4 bg-muted/20 rounded-2xl border border-white/10 focus:border-primary outline-none text-foreground font-bold h-24 resize-none" value={guildDesc} onChange={(e) => setGuildDesc(e.target.value)} />
                       <div className="flex gap-3">
-                         <button onClick={() => setStep(1)} className="flex-1 py-4 rounded-2xl bg-muted/30 font-bold uppercase text-[10px]">Back</button>
+                         <button onClick={setStepOne} className="flex-1 py-4 rounded-2xl bg-muted/30 font-bold uppercase text-[10px]">Back</button>
                          <button onClick={handleCreateGuild} className="flex-[2] py-4 rounded-2xl anime-gradient text-white font-black uppercase tracking-widest shadow-lg shadow-primary/20">Form Guild</button>
                       </div>
                     </div>

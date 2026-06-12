@@ -5,20 +5,31 @@ import {
   MoreVertical, Mic, Image, MapPin, UserPlus,
   Music, Trash2, Edit2, Copy, X, Plus
 } from "lucide-react";
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 
-// Contexts
 import { useAuth } from "../contexts/AuthContext";
 import { useChat } from "../contexts/ChatContext";
 import { useSocket } from "../contexts/SocketContext";
 import { useFriends } from "../contexts/FriendContext";
 
-// Components
 import AnimeAvatar from "../components/AnimeAvatar";
 import ChatBubble from "../components/ChatBubble";
 import ChatMascot from "../components/ChatMascot";
 import StickerPanel from "../components/StickerPanel";
+
+const MEDIA_MENU_ITEMS = [
+  { icon: Image, label: "Gallery", color: "text-blue-400" },
+  { icon: Music, label: "Audio", color: "text-purple-400" },
+  { icon: MapPin, label: "Location", color: "text-red-400" },
+  { icon: UserPlus, label: "Contact", color: "text-green-400" },
+];
+
+const EMOTION_KEYWORDS = [
+  { keywords: ["!", "haha", "lol", "happy", "smile"], emotion: "happy" },
+  { keywords: ["sad", "😭", "cry", "hurt"], emotion: "sad" },
+  { keywords: ["angry", "baka", "hate", "mad"], emotion: "angry" }
+];
 
 const ChatView = () => {
   const { chatId: userId } = useParams();
@@ -27,10 +38,8 @@ const ChatView = () => {
   const { socket, onlineUsers } = useSocket();
   const { friends } = useFriends();
 
-  // Context functions
   const { messages, fetchMessages, sendNewMessage, setSelectedUser, setMessages } = useChat();
 
-  // States
   const [input, setInput] = useState("");
   const [otherEmotion, setOtherEmotion] = useState("neutral");
   const [showStickers, setShowStickers] = useState(false);
@@ -45,7 +54,8 @@ const ChatView = () => {
     return friends?.find(f => f._id === userId);
   }, [userId, friends]);
 
-  // FIXED: Sync Context & Fetch (Dependency Array Cleaned up)
+  const isOnline = useMemo(() => onlineUsers?.includes(userId), [onlineUsers, userId]);
+
   useEffect(() => {
     if (userId && selectedFriend) {
       setSelectedUser(selectedFriend);
@@ -53,17 +63,18 @@ const ChatView = () => {
     }
     return () => {
       setSelectedUser(null);
-      setMessages([]); // Cleanup on unmount
+      setMessages([]);
     };
-    // केवल userId और selectedFriend बदलने पर ही दोबारा रन होगा
-  }, [userId, selectedFriend]); 
+  }, [userId, selectedFriend, setSelectedUser, fetchMessages, setMessages]);
 
-  // Auto Scroll
+  const scrollToBottom = useCallback((behavior = "smooth") => {
+    bottomRef.current?.scrollIntoView({ behavior });
+  }, []);
+
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    scrollToBottom(messages.length <= 10 ? "auto" : "smooth");
+  }, [messages, scrollToBottom]);
 
-  // Socket Listeners
   useEffect(() => {
     if (!socket || !userId) return;
     
@@ -79,7 +90,16 @@ const ChatView = () => {
     };
   }, [socket, userId]);
 
-  // --- Handlers ---
+  const detectEmotion = useCallback((text) => {
+    const lower = text.toLowerCase();
+    for (const item of EMOTION_KEYWORDS) {
+      if (item.keywords.some(keyword => lower.includes(keyword))) {
+        return item.emotion;
+      }
+    }
+    return "neutral";
+  }, []);
+
   const handleSend = async (customContent = null, type = "text") => {
     const messageText = customContent || input.trim();
     if (!messageText || !userId) return;
@@ -94,22 +114,16 @@ const ChatView = () => {
         emotion: emotion || "neutral",
         type: type
       });
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      scrollToBottom();
     } catch (err) {
       toast.error("Failed to send message");
     }
   };
 
-  const detectEmotion = (text) => {
-    const lower = text.toLowerCase();
-    if (lower.includes("!") || lower.includes("haha")) return "happy";
-    if (lower.includes("sad") || lower.includes("😭")) return "sad";
-    if (lower.includes("angry") || lower.includes("baka")) return "angry";
-    return "neutral";
-  };
-
   const handleInputChange = (e) => {
-    setInput(e.target.value);
+    const val = e.target.value;
+    setInput(val);
+    
     if (socket && user?._id && userId) {
       socket.emit("typing", { senderId: user._id, receiverId: userId });
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
@@ -125,11 +139,8 @@ const ChatView = () => {
     setSelectedMsgId(null);
   };
 
-  const isOnline = onlineUsers?.includes(userId);
-
   return (
     <div className="flex flex-col h-screen bg-background/50 relative overflow-hidden">
-      {/* Header */}
       <header className="glass-panel px-4 py-3 flex items-center justify-between z-20 border-b border-white/10">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="p-1 hover:bg-white/10 rounded-full transition-colors">
@@ -157,49 +168,46 @@ const ChatView = () => {
         </div>
       </header>
 
-      {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 custom-scrollbar overflow-x-hidden">
         <ChatMascot emotion={otherEmotion} />
-        {messages.map((msg) => (
-          <div key={msg._id} className="relative group max-w-full">
-            <div
-              onClick={() => setSelectedMsgId(selectedMsgId === msg._id ? null : msg._id)}
-              className="cursor-pointer transition-transform active:scale-[0.98]"
-            >
-              <ChatBubble
-                message={msg}
-                isMine={msg.senderId === user?._id}
-              />
-            </div>
+        {messages.map((msg) => {
+          const isMine = msg.senderId === user?._id;
+          return (
+            <div key={msg._id} className="relative group max-w-full">
+              <div
+                onClick={() => setSelectedMsgId(selectedMsgId === msg._id ? null : msg._id)}
+                className="cursor-pointer transition-transform active:scale-[0.98]"
+              >
+                <ChatBubble message={msg} isMine={isMine} />
+              </div>
 
-            {/* Message Actions (CRUD UI) */}
-            <AnimatePresence>
-              {selectedMsgId === msg._id && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  className={`absolute z-30 -top-10 flex gap-1 bg-card/90 backdrop-blur-md p-1 rounded-xl border border-white/10 shadow-2xl ${msg.senderId === user?._id ? 'right-0' : 'left-0'}`}
-                >
-                  <button onClick={() => copyToClipboard(msg.text)} className="p-2 hover:bg-white/10 rounded-lg text-xs flex items-center gap-1">
-                    <Copy className="w-3.5 h-3.5" />
-                  </button>
-                  {msg.senderId === user?._id && (
-                    <>
-                      <button className="p-2 hover:bg-white/10 rounded-lg text-blue-400"><Edit2 className="w-3.5 h-3.5" /></button>
-                      <button className="p-2 hover:bg-white/10 rounded-lg text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
-                    </>
-                  )}
-                  <button onClick={() => setSelectedMsgId(null)} className="p-2 hover:bg-white/10 rounded-lg"><X className="w-3.5 h-3.5" /></button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        ))}
+              <AnimatePresence>
+                {selectedMsgId === msg._id && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className={`absolute z-30 -top-10 flex gap-1 bg-card/90 backdrop-blur-md p-1 rounded-xl border border-white/10 shadow-2xl ${isMine ? 'right-0' : 'left-0'}`}
+                  >
+                    <button onClick={() => copyToClipboard(msg.text)} className="p-2 hover:bg-white/10 rounded-lg text-xs flex items-center gap-1">
+                      <Copy className="w-3.5 h-3.5" />
+                    </button>
+                    {isMine && (
+                      <>
+                        <button className="p-2 hover:bg-white/10 rounded-lg text-blue-400"><Edit2 className="w-3.5 h-3.5" /></button>
+                        <button className="p-2 hover:bg-white/10 rounded-lg text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
+                      </>
+                    )}
+                    <button onClick={() => setSelectedMsgId(null)} className="p-2 hover:bg-white/10 rounded-lg"><X className="w-3.5 h-3.5" /></button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })}
         <div ref={bottomRef} className="h-2" />
       </div>
 
-      {/* Footer with Media Menu */}
       <footer className="p-4 bg-background/80 backdrop-blur-md border-t border-white/5 relative">
         <StickerPanel
           open={showStickers}
@@ -207,7 +215,6 @@ const ChatView = () => {
           onSelect={(s) => handleSend(s, 'sticker')}
         />
 
-        {/* Multimedia Menu */}
         <AnimatePresence>
           {showMediaMenu && (
             <motion.div
@@ -216,12 +223,7 @@ const ChatView = () => {
               exit={{ y: 20, opacity: 0, scale: 0.9 }}
               className="absolute bottom-16 left-0 grid grid-cols-2 gap-3 p-3 glass-panel rounded-2xl z-30 shadow-2xl border border-primary/20 w-48"
             >
-              {[
-                { icon: Image, label: "Gallery", color: "text-blue-400" },
-                { icon: Music, label: "Audio", color: "text-purple-400" },
-                { icon: MapPin, label: "Location", color: "text-red-400" },
-                { icon: UserPlus, label: "Contact", color: "text-green-400" },
-              ].map((item) => (
+              {MEDIA_MENU_ITEMS.map((item) => (
                 <button
                   key={item.label}
                   onClick={() => {
@@ -239,7 +241,6 @@ const ChatView = () => {
         </AnimatePresence>
 
         <div className="flex items-center gap-2 max-w-4xl mx-auto">
-          {/* FIXED: Removed duplicate nested button wrapper */}
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => setShowMediaMenu(!showMediaMenu)}

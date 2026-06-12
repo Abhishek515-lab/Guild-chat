@@ -1,74 +1,73 @@
 import { useMemo } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 
+const HACKER_CHARS = "01アイウエオカキクケコ";
+const GAME_ICONS = ["⭐", "💎", "🔥", "⚡", "🎯", "🏆", "💫"];
+
 const ParticleBackground = () => {
   const { theme } = useTheme();
 
   const particles = useMemo(() => {
-    if (theme === "sakura") {
-      return Array.from({ length: 15 }, (_, i) => ({
-        id: i,
-        left: Math.random() * 100,
-        delay: Math.random() * 10,
-        duration: 8 + Math.random() * 6,
-        size: 10 + Math.random() * 14,
-      }));
+    const generator = (length, themeName) => {
+      return Array.from({ length }, (_, i) => {
+        const base = {
+          id: `${themeName}-${i}`,
+          left: Math.random() * 100,
+          delay: Math.random() * 10,
+          duration: 8 + Math.random() * 6,
+          size: 10 + Math.random() * 14,
+        };
+
+        if (themeName === "rainy") {
+          base.delay = Math.random() * 2;
+          // Rain ki speed fast karne ke liye duration kam kiya (0.6s to 1.2s)
+          base.duration = 0.6 + Math.random() * 0.6;
+          base.size = 1.5 + Math.random() * 1.5;
+        } else if (themeName === "neon") {
+          base.delay = Math.random() * 5;
+          base.duration = 3 + Math.random() * 4;
+          base.size = 4 + Math.random() * 4;
+          base.top = 20 + Math.random() * 60;
+          base.hue = 180 + Math.random() * 120;
+        } else if (themeName === "hacker") {
+          base.delay = Math.random() * 5;
+          base.duration = 2 + Math.random() * 3;
+          base.size = 12;
+          base.char = HACKER_CHARS[Math.floor(Math.random() * HACKER_CHARS.length)];
+        } else if (themeName === "game") {
+          base.delay = Math.random() * 6;
+          base.duration = 4 + Math.random() * 4;
+          base.size = 16 + Math.random() * 10;
+        } else if (themeName === "futuristic") {
+          base.delay = Math.random() * 4;
+          base.duration = 3 + Math.random() * 5;
+          base.size = 3 + Math.random() * 5;
+          base.top = 10 + Math.random() * 80;
+        }
+        return base;
+      });
+    };
+
+    switch (theme) {
+      case "sakura": return generator(15, "sakura");
+      case "rainy": return generator(60, "rainy"); // Rain density badhane ke liye 40 se 60 kiya
+      case "neon": return generator(8, "neon");
+      case "hacker": return generator(30, "hacker");
+      case "game": return generator(12, "game");
+      case "futuristic": return generator(10, "futuristic");
+      default: return [];
     }
-    if (theme === "rainy") {
-      return Array.from({ length: 40 }, (_, i) => ({
-        id: i,
-        left: Math.random() * 100,
-        delay: Math.random() * 3,
-        duration: 1 + Math.random() * 1.5,
-        size: 2,
-      }));
-    }
-    if (theme === "neon") {
-      return Array.from({ length: 8 }, (_, i) => ({
-        id: i,
-        left: Math.random() * 100,
-        delay: Math.random() * 5,
-        duration: 3 + Math.random() * 4,
-        size: 4 + Math.random() * 4,
-      }));
-    }
-    if (theme === "hacker") {
-      return Array.from({ length: 30 }, (_, i) => ({
-        id: i,
-        left: Math.random() * 100,
-        delay: Math.random() * 5,
-        duration: 2 + Math.random() * 3,
-        size: 12,
-      }));
-    }
-    if (theme === "game") {
-      return Array.from({ length: 12 }, (_, i) => ({
-        id: i,
-        left: Math.random() * 100,
-        delay: Math.random() * 6,
-        duration: 4 + Math.random() * 4,
-        size: 16 + Math.random() * 10,
-      }));
-    }
-    if (theme === "futuristic") {
-      return Array.from({ length: 10 }, (_, i) => ({
-        id: i,
-        left: Math.random() * 100,
-        delay: Math.random() * 4,
-        duration: 3 + Math.random() * 5,
-        size: 3 + Math.random() * 5,
-      }));
-    }
-    return [];
   }, [theme]);
 
-  if (theme === "sakura") {
-    return (
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        {particles.map((p) => (
+  if (!particles.length) return null;
+
+  return (
+    <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 select-none transform-gpu">
+      {theme === "sakura" &&
+        particles.map((p) => (
           <div
             key={p.id}
-            className="absolute animate-sakura text-anime-sakura"
+            className="absolute animate-sakura text-anime-sakura transform-gpu will-change-transform"
             style={{
               left: `${p.left}%`,
               animationDelay: `${p.delay}s`,
@@ -79,60 +78,45 @@ const ParticleBackground = () => {
             🌸
           </div>
         ))}
-      </div>
-    );
-  }
 
-  if (theme === "rainy") {
-    return (
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        {particles.map((p) => (
+      {theme === "rainy" &&
+        particles.map((p) => (
           <div
             key={p.id}
-            className="absolute animate-rain bg-accent/40 rounded-full"
+            className="absolute animate-rain bg-current text-sky-400/40 rounded-full transform-gpu will-change-transform"
             style={{
               left: `${p.left}%`,
+              top: `-20px`, // Screen ke upar se start hoga taaki smoother drop lage
               animationDelay: `${p.delay}s`,
               animationDuration: `${p.duration}s`,
               width: `${p.size}px`,
-              height: `${p.size * 8}px`,
+              height: `${p.size * 12}px`, // Bars ko realistic stretch look diya
             }}
           />
         ))}
-      </div>
-    );
-  }
 
-  if (theme === "neon") {
-    return (
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        {particles.map((p) => (
+      {theme === "neon" &&
+        particles.map((p) => (
           <div
             key={p.id}
-            className="absolute animate-float rounded-full"
+            className="absolute animate-float rounded-full transform-gpu will-change-transform"
             style={{
               left: `${p.left}%`,
-              top: `${20 + Math.random() * 60}%`,
+              top: `${p.top}%`,
               animationDelay: `${p.delay}s`,
               animationDuration: `${p.duration}s`,
               width: `${p.size}px`,
               height: `${p.size}px`,
-              background: `radial-gradient(circle, hsl(${180 + Math.random() * 120} 100% 50% / 0.6), transparent)`,
+              background: `radial-gradient(circle, hsl(${p.hue} 100% 50% / 0.6), transparent)`,
             }}
           />
         ))}
-      </div>
-    );
-  }
 
-  if (theme === "hacker") {
-    const chars = "01アイウエオカキクケコ";
-    return (
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        {particles.map((p) => (
+      {theme === "hacker" &&
+        particles.map((p) => (
           <div
             key={p.id}
-            className="absolute animate-rain font-mono text-primary/30"
+            className="absolute animate-rain font-mono text-primary/30 transform-gpu will-change-transform"
             style={{
               left: `${p.left}%`,
               animationDelay: `${p.delay}s`,
@@ -140,21 +124,15 @@ const ParticleBackground = () => {
               fontSize: `${p.size}px`,
             }}
           >
-            {chars[Math.floor(Math.random() * chars.length)]}
+            {p.char}
           </div>
         ))}
-      </div>
-    );
-  }
 
-  if (theme === "game") {
-    const icons = ["⭐", "💎", "🔥", "⚡", "🎯", "🏆", "💫"];
-    return (
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        {particles.map((p) => (
+      {theme === "game" &&
+        particles.map((p, idx) => (
           <div
             key={p.id}
-            className="absolute animate-sakura"
+            className="absolute animate-sakura transform-gpu will-change-transform"
             style={{
               left: `${p.left}%`,
               animationDelay: `${p.delay}s`,
@@ -163,23 +141,18 @@ const ParticleBackground = () => {
               opacity: 0.4,
             }}
           >
-            {icons[p.id % icons.length]}
+            {GAME_ICONS[idx % GAME_ICONS.length]}
           </div>
         ))}
-      </div>
-    );
-  }
 
-  if (theme === "futuristic") {
-    return (
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        {particles.map((p) => (
+      {theme === "futuristic" &&
+        particles.map((p) => (
           <div
             key={p.id}
-            className="absolute animate-float rounded-full"
+            className="absolute animate-float rounded-full transform-gpu will-change-transform"
             style={{
               left: `${p.left}%`,
-              top: `${10 + Math.random() * 80}%`,
+              top: `${p.top}%`,
               animationDelay: `${p.delay}s`,
               animationDuration: `${p.duration}s`,
               width: `${p.size}px`,
@@ -188,12 +161,8 @@ const ParticleBackground = () => {
             }}
           />
         ))}
-      </div>
-    );
-  }
-
-  // light theme — no particles
-  return null;
+    </div>
+  );
 };
 
 export default ParticleBackground;

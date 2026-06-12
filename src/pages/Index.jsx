@@ -1,6 +1,6 @@
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Search, MoreVertical, Users, MessageCircle } from "lucide-react";
-import { useState } from "react";
+import { Search, MoreVertical, Users, MessageCircle, Shield, Gamepad2 } from "lucide-react";
 
 import AnimeAvatar from "./components/AnimeAvatar";
 import ChatListItem from "./components/ChatListItem";
@@ -8,30 +8,34 @@ import ThemePicker from "./components/ThemePicker";
 import FABMenu from "./components/FABMenu";
 import { currentUser, chats } from "../data/mockData";
 
+const TABS = [
+  { key: "chats", icon: MessageCircle, label: "Chats" },
+  { key: "guild", icon: Shield, label: "Guild" },
+  { key: "friends", icon: Users, label: "Friends" },
+  { key: "games", icon: Gamepad2, label: "Games" },
+];
+
 const Index = () => {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("chats");
 
-  const filtered = chats.filter((c) => {
-    const matchesTab = tab === "groups" ? c.isGroup : !c.isGroup;
+  const filteredChats = useMemo(() => {
+    return chats.filter((c) => {
+      let matchesTab = false;
+      if (tab === "chats") matchesTab = !c.isGroup && !c.isGuild;
+      else if (tab === "guild") matchesTab = !!c.isGuild;
+      else if (tab === "friends") matchesTab = !!c.isFriend;
+      else if (tab === "games") matchesTab = false;
 
-    if (!search) return matchesTab;
+      if (!matchesTab) return false;
+      if (!search) return true;
 
-    const name = c.name || "";
-    return (
-      matchesTab &&
-      name.toLowerCase().includes(search.toLowerCase())
-    );
-  });
-
-  const tabs = [
-    { key: "chats", icon: MessageCircle, label: "Chats" },
-    { key: "groups", icon: Users, label: "Groups" },
-  ];
+      return (c.name || "").toLowerCase().includes(search.toLowerCase());
+    });
+  }, [search, tab]);
 
   return (
     <div className="flex flex-col h-screen max-w-md mx-auto relative z-10">
-      {/* Header */}
       <motion.header
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -46,20 +50,18 @@ const Index = () => {
               emotion={currentUser.emotion}
               size="sm"
             />
-
             <div>
               <h1 className="text-lg font-heading font-extrabold text-foreground">
-                AnimeChat
+                GuildChat
               </h1>
               <p className="text-[10px] text-muted-foreground">
-                Your anime world awaits ✨
+                Welcome back, {currentUser.name}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-1">
             <ThemePicker />
-
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
@@ -70,10 +72,8 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Search */}
         <div className="relative mb-3">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -82,13 +82,12 @@ const Index = () => {
           />
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 p-1 rounded-xl bg-muted/40">
-          {tabs.map((t) => (
+        <div className="flex gap-1 p-1 rounded-xl bg-muted/40 overflow-x-auto custom-scrollbar">
+          {TABS.map((t) => (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-heading font-bold transition-all ${
+              className={`flex-1 min-w-[70px] flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-heading font-bold transition-all ${
                 tab === t.key
                   ? "anime-gradient text-primary-foreground shadow-md"
                   : "text-muted-foreground hover:text-foreground"
@@ -101,13 +100,18 @@ const Index = () => {
         </div>
       </motion.header>
 
-      {/* Chat List */}
       <div className="flex-1 overflow-y-auto px-2 pb-20">
-        {filtered.map((chat, i) => (
-          <ChatListItem key={chat.id} chat={chat} index={i} />
-        ))}
+        {tab === "games" ? (
+          <div className="p-4 text-center text-muted-foreground text-sm">
+            Games section loaded.
+          </div>
+        ) : (
+          filteredChats.map((chat, i) => (
+            <ChatListItem key={chat.id} chat={chat} index={i} />
+          ))
+        )}
 
-        {filtered.length === 0 && (
+        {tab !== "games" && filteredChats.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
             <span className="text-4xl mb-2">🔍</span>
             <p className="text-sm">No chats found</p>
@@ -115,7 +119,6 @@ const Index = () => {
         )}
       </div>
 
-      {/* FAB */}
       <FABMenu />
     </div>
   );

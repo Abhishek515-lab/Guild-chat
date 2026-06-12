@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
 
-// 🌸 Default Sakura path set karlo
 const DEFAULT_SAKURA = "/uploads/avatar-sakura.png";
 
 const sizeMap = {
@@ -45,8 +44,13 @@ const AnimeAvatar = ({
   const selectedAnimation = emotionAnimation[emotion] || emotionAnimation.neutral;
   const selectedEmoji = emotionEmoji[emotion] || "";
 
-  // 💡 FIX: Agar src khali string ("") ya undefined hai, toh Sakura ko bulao
   const finalSrc = src && src !== "" ? src : DEFAULT_SAKURA;
+
+  const handleImgError = (e) => {
+    if (e.target.src !== window.location.origin + DEFAULT_SAKURA) {
+      e.target.src = DEFAULT_SAKURA;
+    }
+  };
 
   return (
     <div className="relative inline-flex flex-col items-center">
@@ -54,16 +58,13 @@ const AnimeAvatar = ({
         animate={selectedAnimation}
         className={`${selectedSize} relative`}
       >
-        {/* Glow ring */}
         <div
           className={`absolute inset-0 rounded-full ${
             isOnline ? "avatar-online-glow" : ""
           }`}
         />
 
-        {/* Avatar image */}
         <motion.img
-          // 🔥 Ab yahan kabhi empty string nahi jayegi
           src={finalSrc}
           alt={name || "User Avatar"}
           className={`${selectedSize} rounded-full object-cover border-2 ${
@@ -71,15 +72,9 @@ const AnimeAvatar = ({
           } ${isSleeping ? "opacity-70 grayscale-[30%]" : ""}`}
           whileHover={{ scale: 1.1 }}
           transition={{ type: "spring", stiffness: 300 }}
-          // 💡 Safety layer: Agar path galat ho toh default pe switch kar jaye
-          onError={(e) => {
-            if (e.target.src !== DEFAULT_SAKURA) {
-              e.target.src = DEFAULT_SAKURA;
-            }
-          }}
+          onError={handleImgError}
         />
 
-        {/* Status indicator */}
         {showStatus && (
           <div
             className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background ${
@@ -88,7 +83,6 @@ const AnimeAvatar = ({
           />
         )}
 
-        {/* Emotion indicator */}
         {selectedEmoji && (
           <motion.span
             initial={{ scale: 0, y: 5 }}

@@ -1,117 +1,127 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Eye, EyeOff } from "lucide-react"; // Eye icons import किए
+import { Eye, EyeOff } from "lucide-react";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [step, setStep] = useState(1);
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    otp: "",
+    username: "",
+    password: "",
+    confirmPassword: "",
+  });
 
-  // पासवर्ड विजिबिलिटी स्टेट्स
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
   const [loading, setLoading] = useState(false);
 
   const { signIn, signUp, verifyEmail, sendOTP } = useAuth();
   const navigate = useNavigate();
 
-  // ---------- STEP CONTROL ----------
-  const nextStep = () => setStep((prev) => Math.min(prev + 1, 5));
-  const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
+  const handleInputChange = useCallback((e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  }, []);
 
-  const resetSignup = () => {
+  const nextStep = useCallback(() => setStep((prev) => Math.min(prev + 1, 5)), []);
+  const prevStep = useCallback(() => setStep((prev) => Math.max(prev - 1, 1)), []);
+
+  const resetSignup = useCallback(() => {
     setStep(1);
-    setFirstName("");
-    setLastName("");
-    setEmail("");
-    setOtp("");
-    setUsername("");
-    setPassword("");
-    setConfirmPassword("");
+    setFormData({
+      firstName: "",
+      lastName: "",
+      email: "",
+      otp: "",
+      username: "",
+      password: "",
+      confirmPassword: "",
+    });
     setShowPassword(false);
     setShowConfirmPassword(false);
-  };
+  }, []);
 
-  // ---------- LOGIN ----------
+  const toggleAuthMode = useCallback(() => {
+    setIsLogin((prev) => !prev);
+    resetSignup();
+  }, [resetSignup]);
+
+  const toggleShowPassword = useCallback(() => setShowPassword((prev) => !prev), []);
+  const toggleShowConfirmPassword = useCallback(() => setShowConfirmPassword((prev) => !prev), []);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
       setLoading(true);
-
-      const { data, error } = await signIn(email, password);
+      const { data, error } = await signIn(formData.email, formData.password);
 
       if (error) {
         toast.error(error.message);
+        return;
+      }
+
+      if (data?.token) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+        toast.success("Welcome back! 👋");
+        navigate("/");
       } else {
-        if (data && data.token) {
-          localStorage.setItem("token", data.token);
-          localStorage.setItem("user", JSON.stringify(data.user));
-
-          toast.success("Welcome back! 👋");
-
-
-          window.location.href = "/";
-        } else {
-          toast.error("Login failed: Token not received");
-        }
+        toast.error("Login failed: Token not received");
       }
     } catch (err) {
       toast.error("Something went wrong during login");
-      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  // ---------- SEND OTP ----------
   const handleSendOTP = async () => {
-    if (!email) {
+    if (!formData.email) {
       toast.error("Email is required");
       return;
     }
     try {
       setLoading(true);
-      const { error } = await sendOTP(email);
+      const { error } = await sendOTP(formData.email);
       if (error) {
         toast.error(error.message);
         return;
       }
       toast.success("OTP sent to your email");
       setStep(3);
+    } catch (err) {
+      toast.error("Failed to send OTP");
     } finally {
       setLoading(false);
     }
   };
 
-  // ---------- VERIFY OTP ----------
   const handleVerifyOTP = async () => {
     try {
       setLoading(true);
-      const { error } = await verifyEmail(email, otp);
+      const { error } = await verifyEmail(formData.email, formData.otp);
       if (error) {
         toast.error(error.message);
         return;
       }
-      toast.success("Email verified ");
+      toast.success("Email verified");
       setStep(4);
+    } catch (err) {
+      toast.error("Failed to verify OTP");
     } finally {
       setLoading(false);
     }
   };
 
-  // ---------- FINAL SIGNUP ----------
   const handleSignup = async () => {
-    if (password !== confirmPassword) {
+    if (formData.password !== formData.confirmPassword) {
       toast.error("Passwords do not match");
       return;
     }
@@ -119,11 +129,11 @@ const Auth = () => {
     try {
       setLoading(true);
       const { data, error } = await signUp({
-        firstName,
-        lastName,
-        email,
-        username,
-        password,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        username: formData.username,
+        password: formData.password,
       });
 
       if (error) {
@@ -132,219 +142,228 @@ const Auth = () => {
       }
 
       toast.success("Account created successfully! 🎉");
-
-     
-      window.location.href = "/";
-
+      navigate("/");
     } catch (err) {
       toast.error("Something went wrong");
     } finally {
       setLoading(false);
     }
   };
+
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center bg-background/50 px-6">
-
-
-      {/* GLOSSY BOX CONTAINER */}
-      <div className="w-full max-w-md bg-white/30 backdrop-blur-md border border-white/40 p-8 rounded-3xl shadow-xl flex flex-col items-center">
-
-        {/* ---------------- LOGIN ---------------- */}
-        {isLogin && (
+    <div className="min-h-screen flex flex-col justify-center items-center px-6 relative z-10 select-none">
+      <div className="w-full max-w-md glass-panel p-8 rounded-[2rem] shadow-2xl flex flex-col items-center bg-background/60 backdrop-blur-md border border-white/10">
+        {isLogin ? (
           <form onSubmit={handleLogin} className="w-full space-y-4">
-            <h1 className="text-5xl text-center font-black text-black mb-8 tracking-tight">
+            <h1 className="text-5xl text-center font-heading font-black text-foreground mb-8 tracking-tighter uppercase anime-gradient-text">
               GuildChat
             </h1>
             <input
               type="email"
+              name="email"
               placeholder="Email"
               required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-4 rounded-xl text-lg bg-background/50 backdrop-blur-sm border border-white/20 outline-none focus:ring-2 focus:ring-black/20 transition-all"
+              value={formData.email}
+              onChange={handleInputChange}
+              className="w-full p-4 rounded-xl text-base bg-muted/30 text-foreground border border-white/10 outline-none focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-muted-foreground"
             />
 
-            {/* Password Input Wrapper with Eye Icon */}
             <div className="relative w-full">
               <input
                 type={showPassword ? "text" : "password"}
+                name="password"
                 placeholder="Password"
                 required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full p-4 pr-12 rounded-xl text-lg bg-background/50 backdrop-blur-sm border border-white/20 outline-none focus:ring-2 focus:ring-black/20 transition-all"
+                value={formData.password}
+                onChange={handleInputChange}
+                className="w-full p-4 pr-12 rounded-xl text-base bg-muted/30 text-foreground border border-white/10 outline-none focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-muted-foreground"
               />
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-600 hover:text-black transition-colors"
+                onClick={toggleShowPassword}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               >
-                {showPassword ? <EyeOff size={22} /> : <Eye size={22} />}
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-black text-white py-4 rounded-xl text-lg font-bold hover:bg-stone-900 active:scale-[0.99] transition-all shadow-md"
+              className="w-full bg-primary text-primary-foreground py-4 rounded-xl text-base font-bold uppercase tracking-wider hover:opacity-90 active:scale-[0.99] transition-all shadow-lg shadow-primary/20 disabled:opacity-40 cursor-pointer"
             >
               {loading ? "Please wait..." : "Log In"}
             </button>
           </form>
-        )}
-
-        {/* ---------------- SIGNUP FLOW ---------------- */}
-        {!isLogin && (
+        ) : (
           <div className="w-full space-y-4 flex flex-col">
-
-            {/* STEP 1 - Name */}
+            <h2 className="text-2xl text-center font-heading font-black text-foreground mb-4 uppercase tracking-wider">
+              Create Account
+            </h2>
             {step === 1 && (
               <>
                 <input
                   type="text"
+                  name="firstName"
                   placeholder="First Name"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full p-4 rounded-xl text-lg bg-white/80 backdrop-blur-sm border border-white/20 outline-none focus:ring-2 focus:ring-black/20"
+                  value={formData.firstName}
+                  onChange={handleInputChange}
+                  className="w-full p-4 rounded-xl text-base bg-muted/30 text-foreground border border-white/10 outline-none focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-muted-foreground"
                 />
                 <input
                   type="text"
+                  name="lastName"
                   placeholder="Last Name"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  className="w-full p-4 rounded-xl text-lg bg-white/80 backdrop-blur-sm border border-white/20 outline-none focus:ring-2 focus:ring-black/20"
+                  value={formData.lastName}
+                  onChange={handleInputChange}
+                  className="w-full p-4 rounded-xl text-base bg-muted/30 text-foreground border border-white/10 outline-none focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-muted-foreground"
                 />
                 <button
                   type="button"
                   onClick={nextStep}
-                  disabled={!firstName || !lastName}
-                  className="w-full bg-black text-white py-4 rounded-xl text-lg font-bold disabled:opacity-50"
+                  disabled={!formData.firstName || !formData.lastName}
+                  className="w-full bg-primary text-primary-foreground py-4 rounded-xl text-base font-bold uppercase tracking-wider disabled:opacity-30 cursor-pointer"
                 >
                   Continue
                 </button>
               </>
             )}
 
-            {/* STEP 2 - Email */}
             {step === 2 && (
               <>
                 <input
                   type="email"
-                  placeholder="Email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full p-4 rounded-xl text-lg bg-white/80 backdrop-blur-sm border border-white/20 outline-none focus:ring-2 focus:ring-black/20"
+                  name="email"
+                  placeholder="Email Address"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className="w-full p-4 rounded-xl text-base bg-muted/30 text-foreground border border-white/10 outline-none focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-muted-foreground"
                 />
                 <button
                   type="button"
                   onClick={handleSendOTP}
-                  disabled={!email || loading}
-                  className="w-full bg-black text-white py-4 rounded-xl text-lg font-bold"
+                  disabled={!formData.email || loading}
+                  className="w-full bg-primary text-primary-foreground py-4 rounded-xl text-base font-bold uppercase tracking-wider disabled:opacity-30 cursor-pointer"
                 >
                   {loading ? "Sending..." : "Verify Email"}
                 </button>
-                <button type="button" onClick={prevStep} className="text-stone-700 font-medium text-sm self-center hover:underline">
+                <button
+                  type="button"
+                  onClick={prevStep}
+                  className="text-muted-foreground font-semibold text-xs self-center hover:text-foreground hover:underline transition-all cursor-pointer"
+                >
                   Back
                 </button>
               </>
             )}
 
-            {/* STEP 3 - OTP */}
             {step === 3 && (
               <>
                 <input
                   type="text"
+                  name="otp"
                   placeholder="Enter 6-digit OTP"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  className="w-full p-4 rounded-xl text-lg bg-white/80 backdrop-blur-sm border border-white/20 outline-none text-center tracking-widest focus:ring-2 focus:ring-black/20"
+                  value={formData.otp}
+                  onChange={handleInputChange}
+                  className="w-full p-4 rounded-xl text-base bg-muted/30 text-foreground border border-white/10 outline-none text-center tracking-[0.4em] focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-muted-foreground font-mono"
                 />
                 <button
                   type="button"
                   onClick={handleVerifyOTP}
-                  disabled={!otp || loading}
-                  className="w-full bg-black text-white py-4 rounded-xl text-lg font-bold"
+                  disabled={!formData.otp || loading}
+                  className="w-full bg-primary text-primary-foreground py-4 rounded-xl text-base font-bold uppercase tracking-wider disabled:opacity-30 cursor-pointer"
                 >
                   {loading ? "Verifying..." : "Confirm OTP"}
                 </button>
-                <button type="button" onClick={prevStep} className="text-stone-700 font-medium text-sm self-center hover:underline">
+                <button
+                  type="button"
+                  onClick={prevStep}
+                  className="text-muted-foreground font-semibold text-xs self-center hover:text-foreground hover:underline transition-all cursor-pointer"
+                >
                   Back
                 </button>
               </>
             )}
 
-            {/* STEP 4 - Username */}
             {step === 4 && (
               <>
                 <input
                   type="text"
-                  placeholder="Username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="w-full p-4 rounded-xl text-lg bg-white/80 backdrop-blur-sm border border-white/20 outline-none focus:ring-2 focus:ring-black/20"
+                  name="username"
+                  placeholder="Pick a Username"
+                  value={formData.username}
+                  onChange={handleInputChange}
+                  className="w-full p-4 rounded-xl text-base bg-muted/30 text-foreground border border-white/10 outline-none focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-muted-foreground"
                 />
                 <button
                   type="button"
                   onClick={nextStep}
-                  disabled={!username}
-                  className="w-full bg-black text-white py-4 rounded-xl text-lg font-bold"
+                  disabled={!formData.username}
+                  className="w-full bg-primary text-primary-foreground py-4 rounded-xl text-base font-bold uppercase tracking-wider disabled:opacity-30 cursor-pointer"
                 >
                   Continue
                 </button>
-                <button type="button" onClick={prevStep} className="text-stone-700 font-medium text-sm self-center hover:underline">
+                <button
+                  type="button"
+                  onClick={prevStep}
+                  className="text-muted-foreground font-semibold text-xs self-center hover:text-foreground hover:underline transition-all cursor-pointer"
+                >
                   Back
                 </button>
               </>
             )}
 
-            {/* STEP 5 - Password */}
             {step === 5 && (
               <>
-                {/* Signup Password */}
                 <div className="relative w-full">
                   <input
                     type={showPassword ? "text" : "password"}
+                    name="password"
                     placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full p-4 pr-12 rounded-xl text-lg bg-white/80 backdrop-blur-sm border border-white/20 outline-none focus:ring-2 focus:ring-black/20"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    className="w-full p-4 pr-12 rounded-xl text-base bg-muted/30 text-foreground border border-white/10 outline-none focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-muted-foreground"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-600 hover:text-black"
+                    onClick={toggleShowPassword}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
                   >
-                    {showPassword ? <EyeOff size={22} /> : <Eye size={22} />}
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
                 </div>
 
-                {/* Confirm Password */}
                 <div className="relative w-full">
                   <input
                     type={showConfirmPassword ? "text" : "password"}
+                    name="confirmPassword"
                     placeholder="Confirm Password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full p-4 pr-12 rounded-xl text-lg bg-white/80 backdrop-blur-sm border border-white/20 outline-none focus:ring-2 focus:ring-black/20"
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                    className="w-full p-4 pr-12 rounded-xl text-base bg-muted/30 text-foreground border border-white/10 outline-none focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-muted-foreground"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-600 hover:text-black"
+                    onClick={toggleShowConfirmPassword}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
                   >
-                    {showConfirmPassword ? <EyeOff size={22} /> : <Eye size={22} />}
+                    {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
                 </div>
 
                 <button
                   type="button"
                   onClick={handleSignup}
-                  disabled={!password || !confirmPassword || loading}
-                  className="w-full bg-black text-white py-4 rounded-xl text-lg font-bold"
+                  disabled={!formData.password || !formData.confirmPassword || loading}
+                  className="w-full bg-primary text-primary-foreground py-4 rounded-xl text-base font-bold uppercase tracking-wider disabled:opacity-30 cursor-pointer shadow-lg shadow-primary/20"
                 >
                   {loading ? "Creating..." : "Create Account"}
                 </button>
-                <button type="button" onClick={prevStep} className="text-stone-700 font-medium text-sm self-center hover:underline">
+                <button
+                  type="button"
+                  onClick={prevStep}
+                  className="text-muted-foreground font-semibold text-xs self-center hover:text-foreground hover:underline transition-all cursor-pointer"
+                >
                   Back
                 </button>
               </>
@@ -352,15 +371,11 @@ const Auth = () => {
           </div>
         )}
 
-        {/* TOGGLE BUTTON INSIDE/BOTTOM OF GLASS BOX */}
-        <p className="mt-6 text-stone-800 text-sm font-medium">
+        <p className="mt-6 text-muted-foreground text-sm font-medium">
           {isLogin ? "New here? " : "Already have an account? "}
           <span
-            onClick={() => {
-              setIsLogin(!isLogin);
-              resetSignup();
-            }}
-            className="underline font-bold cursor-pointer text-black hover:text-stone-800 transition-colors"
+            onClick={toggleAuthMode}
+            className="underline font-bold cursor-pointer text-foreground hover:opacity-80 transition-all"
           >
             {isLogin ? "Sign Up" : "Log In"}
           </span>

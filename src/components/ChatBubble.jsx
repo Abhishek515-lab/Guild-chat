@@ -1,18 +1,30 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import MessageReactions from "./MessageReactions";
 
 const ChatBubble = ({ message, isMine }) => {
   const [reactions, setReactions] = useState({});
 
-  const handleReact = (emoji) => {
+  const handleReact = useCallback((emoji) => {
     setReactions((prev) => ({
       ...prev,
       [emoji]: (prev[emoji] || 0) + 1,
     }));
-  };
+  }, []);
 
   const isSticker = message?.type === "sticker";
+  const isVoice = message?.type === "voice";
+
+  const formattedTime = useMemo(() => {
+    if (message?.timestamp) return message.timestamp;
+    if (message?.createdAt) {
+      return new Date(message.createdAt).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+    return "";
+  }, [message?.timestamp, message?.createdAt]);
 
   return (
     <motion.div
@@ -26,11 +38,11 @@ const ChatBubble = ({ message, isMine }) => {
           <motion.div whileHover={{ scale: 1.1 }} className="text-5xl py-2">
             {message?.text}
           </motion.div>
-        ) : message?.type === "voice" ? (
+        ) : isVoice ? (
           <div
-            className={`px-4 py-2.5 ${
+            className={`px-4 py-2.5 shadow-sm ${
               isMine ? "chat-bubble-sent" : "chat-bubble-received"
-            } shadow-sm`}
+            }`}
           >
             <div className="flex items-center gap-2">
               <motion.div
@@ -57,30 +69,25 @@ const ChatBubble = ({ message, isMine }) => {
               </span>
             </div>
             <span className="text-[10px] text-muted-foreground mt-1 block text-right">
-              {message?.timestamp}
+              {formattedTime}
             </span>
           </div>
         ) : (
-          /* 👇 TEXT WRAP FIX YAHAN HAI */
           <div
-            className={`px-4 py-2.5 shadow-sm ${
+            className={`px-4 py-2.5 shadow-sm break-words [word-break:break-word] whitespace-pre-wrap flex flex-col ${
               isMine ? "chat-bubble-sent" : "chat-bubble-received"
-            } 
-            break-words overflow-wrap-anywhere whitespace-pre-wrap flex flex-col`}
+            }`}
           >
-            <p className="text-sm font-body leading-relaxed text-foreground break-words overflow-hidden">
+            <p className="text-sm font-body leading-relaxed text-foreground">
               {message?.text}
             </p>
             <span className="text-[10px] text-muted-foreground mt-1 block text-right self-end">
-              {message?.timestamp || new Date(message?.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+              {formattedTime}
             </span>
           </div>
         )}
 
-        <MessageReactions
-          reactions={reactions}
-          onReact={handleReact}
-        />
+        <MessageReactions reactions={reactions} onReact={handleReact} />
       </div>
     </motion.div>
   );

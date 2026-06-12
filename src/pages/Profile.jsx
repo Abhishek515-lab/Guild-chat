@@ -1,19 +1,18 @@
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, Camera, Trophy, LogOut, Edit2, Palette,
   Bell, Shield, Star, ChevronRight
 } from "lucide-react";
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import AnimeAvatar from "../components/AnimeAvatar";
 import { useFriends } from "../contexts/FriendContext";
 import {
-  Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle,DialogDescription
+  Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription
 } from "../components/ui/dialog";
 
-// Assets
-const avatars = [
+const AVATARS = [
   "/uploads/avatar-sakura.png",
   "/uploads/avatar-kai.png",
   "/uploads/avatar-luna.png",
@@ -21,45 +20,47 @@ const avatars = [
   "/uploads/avatar-yuki.png"
 ];
 
+const EMOTIONS = [
+  { key: "happy", icon: "😄" },
+  { key: "playful", icon: "😜" },
+  { key: "neutral", icon: "😐" },
+  { key: "sad", icon: "😢" },
+  { key: "surprised", icon: "😲" }
+];
+
+const MENU_ITEMS = [
+  { icon: Edit2, label: "Edit Profile", desc: "Name, bio, avatar", color: "text-primary" },
+  { icon: Palette, label: "Themes & Style", desc: "Colors, effects, outfits", color: "text-accent" },
+  { icon: Bell, label: "Notifications", desc: "Sounds, anime SFX", color: "text-yellow-500" },
+  { icon: Shield, label: "Privacy", desc: "Online status, chat lock", color: "text-teal-500" },
+  { icon: Star, label: "Achievements", desc: "Badges & unlocks", color: "text-pink-500" },
+];
+
 const Profile = () => {
   const navigate = useNavigate();
   const { user, logout, updateProfile } = useAuth();
-
-  // 💡 Safe Check: Agar context undefined hai toh empty array default rakho
-  const friendData = useFriends() || { friends: [], loading: false };
-  const { friends, loading } = friendData;
+  const { friends = [], loading = false } = useFriends() || {};
 
   const [emotion, setEmotion] = useState("happy");
-  // 💡 Safe Check for Avatar
   const [avatar, setAvatar] = useState(user?.avatar || "");
-
-  // const [avatar, setAvatar] = useState(user?.avatar || "");
-  const [selectedInDialog, setSelectedInDialog] = useState(null); // Dialog mein kaunsa select kiya
-  const [isUpdating, setIsUpdating] = useState(false); // Loading state
-
-
-
+  const [selectedInDialog, setSelectedInDialog] = useState(null);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
-    if (user?.avatar) setAvatar(user.avatar);
-  }, [user]);
+    if (user?.avatar) {
+      setAvatar(user.avatar);
+    }
+  }, [user?.avatar]);
 
-
-
-  // Backend mein save karne ka logic
   const handleSaveAvatar = async () => {
     if (!selectedInDialog) return;
-
     try {
       setIsUpdating(true);
       const { success, error } = await updateProfile({ avatar: selectedInDialog });
-
       if (success) {
         setAvatar(selectedInDialog);
-        console.log("Avatar updated successfully! ✨");
       } else {
-        // alert(error || "Update failed");
-        console.error("UPDATE ERROR:", error.response || error);
+        console.error("UPDATE ERROR:", error?.response || error);
       }
     } catch (err) {
       console.error(err);
@@ -68,65 +69,32 @@ const Profile = () => {
     }
   };
 
-  // 2. Avatar selection with Backend Sync
-  // const handleAvatarSelect = async (imgUrl) => {
-  //   try {
-  //     setIsUpdating(true);
-  //     setAvatar(imgUrl); // Turant UI update
-
-  //     const { success, error } = await updateProfile({ avatar: imgUrl });
-
-  //     if (success) {
-  //       console.log("Avatar saved successfully! ✨");
-  //     } else {
-  //       alert(error || "Failed to save avatar");
-  //     }
-  //   } catch (err) {
-  //     console.error(err);
-  //   } finally {
-  //     setIsUpdating(false);
-  //   }
-  // };
-
-  //   const handleAvatarSelect = async (imgUrl) => {
-  //   setAvatar(imgUrl); // UI update
-
-  //   // Backend ko save karne ke liye
-  //   const { success, error } = await updateProfile({ avatar: imgUrl });
-
-  //   if (!success) alert(error);
-  // };
-
-  // Stats Logic: Agar backend se data aaye to wo, varna hardcoded default
-  const otherStats = [
+  const otherStats = useMemo(() => [
     { label: "Messages", value: user?.stats?.messages || "1.2K", icon: "💬" },
     { label: "Stickers", value: user?.stats?.stickers || "128", icon: "🎨" },
     { label: "Groups", value: user?.stats?.groups || "4", icon: "🏠" },
-  ];
+  ], [user?.stats]);
 
-  const menuItems = [
-    { icon: Edit2, label: "Edit Profile", desc: "Name, bio, avatar", color: "text-primary" },
-    { icon: Palette, label: "Themes & Style", desc: "Colors, effects, outfits", color: "text-accent" },
-    { icon: Bell, label: "Notifications", desc: "Sounds, anime SFX", color: "text-yellow-500" },
-    { icon: Shield, label: "Privacy", desc: "Online status, chat lock", color: "text-teal-500" },
-    { icon: Star, label: "Achievements", desc: "Badges & unlocks", color: "text-pink-500" },
-  ];
+  const handleLogout = () => {
+    logout();
+    navigate("/auth");
+  };
 
   return (
     <div className="flex flex-col h-screen relative z-10">
       <div className="flex-1 overflow-y-auto">
-        {/* HEADER */}
         <motion.header className="glass-panel px-4 py-3 flex items-center gap-3 md:hidden">
-          <button onClick={() => navigate("/")} className="p-1"><ArrowLeft className="w-5 h-5" /></button>
+          <button onClick={() => navigate("/")} className="p-1">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
           <h2 className="text-sm font-bold">My Profile</h2>
         </motion.header>
 
-        {/* PROFILE HERO */}
         <motion.div className="relative px-6 pt-8 pb-6 flex flex-col items-center">
           <div className="absolute inset-0 anime-gradient opacity-10 rounded-b-3xl" />
           <div className="relative mb-4">
             <AnimeAvatar
-              src={avatar || "/avatars/default-anime.png"} // Backup default
+              src={avatar || "/avatars/default-anime.png"}
               name={user?.username}
               status="online"
               emotion={emotion}
@@ -146,18 +114,19 @@ const Profile = () => {
                   Select an avatar and save it to update your profile.
                 </DialogDescription>
                 <div className="grid grid-cols-3 gap-4 mt-4">
-                  {avatars.map((img, index) => (
+                  {AVATARS.map((img, index) => (
                     <div
                       key={index}
                       onClick={() => setSelectedInDialog(img)}
-                      className={`relative p-1 rounded-full cursor-pointer transition-all ${selectedInDialog === img ? 'ring-4 ring-pink-500 scale-105' : 'hover:scale-105'}`}
+                      className={`relative p-1 rounded-full cursor-pointer transition-all ${
+                        selectedInDialog === img ? 'ring-4 ring-pink-500 scale-105' : 'hover:scale-105'
+                      }`}
                     >
-                      <img src={img} alt="avatar" className="w-16 h-16 rounded-full object-cover" />
+                      <img src={img} alt="" className="w-16 h-16 rounded-full object-cover" />
                     </div>
                   ))}
                 </div>
 
-                {/* 🔘 Select Button with Loading */}
                 <button
                   onClick={handleSaveAvatar}
                   disabled={isUpdating || !selectedInDialog}
@@ -174,7 +143,6 @@ const Profile = () => {
                 </button>
               </DialogContent>
             </Dialog>
-            {/* Level: Hardcoded (Future: user.level) */}
             <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center text-xs font-bold text-black">
               {user?.level || 1}
             </div>
@@ -186,30 +154,37 @@ const Profile = () => {
           </p>
 
           <div className="flex gap-2 mt-3">
-            {["happy", "playful", "neutral", "sad", "surprised"].map((e) => (
-              <button key={e} onClick={() => setEmotion(e)} className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${emotion === e ? "anime-gradient shadow-md scale-110" : "bg-muted/60"}`}>
-                {e === "happy" ? "😄" : e === "playful" ? "😜" : e === "neutral" ? "😐" : e === "sad" ? "😢" : "😲"}
+            {EMOTIONS.map((e) => (
+              <button
+                key={e.key}
+                onClick={() => setEmotion(e.key)}
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
+                  emotion === e.key ? "anime-gradient shadow-md scale-110" : "bg-muted/60"
+                }`}
+              >
+                {e.icon}
               </button>
             ))}
           </div>
         </motion.div>
 
-        {/* STATS GRID */}
         <div className="grid grid-cols-4 gap-2 mx-6 mb-6">
           <Dialog>
             <DialogTrigger asChild>
               <motion.div className="glass-panel rounded-xl p-3 flex flex-col items-center gap-1 cursor-pointer hover:bg-muted/50">
                 <span className="text-lg">👥</span>
-                <span className="text-sm font-bold">{friends?.length || 0}</span>
+                <span className="text-sm font-bold">{friends.length}</span>
                 <span className="text-[9px] text-muted-foreground">Friends</span>
               </motion.div>
             </DialogTrigger>
             <DialogContent className="max-w-sm max-h-[70vh] overflow-y-auto bg-white">
-              <DialogHeader><DialogTitle>Friends List ({friends?.length || 0})</DialogTitle></DialogHeader>
+              <DialogHeader>
+                <DialogTitle>Friends List ({friends.length})</DialogTitle>
+              </DialogHeader>
               <div className="space-y-3 mt-4">
                 {loading ? (
                   <p className="text-center text-sm italic">Summoning your nakamas...</p>
-                ) : friends?.length > 0 ? (
+                ) : friends.length > 0 ? (
                   friends.map((friend) => (
                     <div key={friend._id} className="flex items-center gap-3 p-2 rounded-lg border border-slate-100">
                       <AnimeAvatar src={friend.avatar} name={friend.username} size="sm" />
@@ -221,7 +196,7 @@ const Profile = () => {
                     </div>
                   ))
                 ) : (
-                  <p className="text-center text-muted-foreground text-sm py-4">No friends found yet. 🌸</p>
+                  <p className="text-center text-muted-foreground text-sm py-4">No friends found yet.</p>
                 )}
               </div>
             </DialogContent>
@@ -236,20 +211,26 @@ const Profile = () => {
           ))}
         </div>
 
-        {/* MENU */}
         <div className="mx-6 mb-6 space-y-2">
-          {menuItems.map((item) => (
+          {MENU_ITEMS.map((item) => (
             <button key={item.label} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left hover:bg-muted/30">
-              <div className={`w-9 h-9 rounded-lg bg-muted/60 flex items-center justify-center ${item.color}`}><item.icon className="w-4 h-4" /></div>
-              <div className="flex-1"><p className="text-sm font-bold">{item.label}</p><p className="text-[10px] text-muted-foreground">{item.desc}</p></div>
+              <div className={`w-9 h-9 rounded-lg bg-muted/60 flex items-center justify-center ${item.color}`}>
+                <item.icon className="w-4 h-4" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-bold">{item.label}</p>
+                <p className="text-[10px] text-muted-foreground">{item.desc}</p>
+              </div>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>
           ))}
         </div>
 
-        {/* LOGOUT */}
         <div className="mx-6 mb-8">
-          <motion.button onClick={() => { logout(); navigate("/auth"); }} className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 text-red-500 font-bold hover:bg-red-500/20 transition-all">
+          <motion.button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 text-red-500 font-bold hover:bg-red-500/20 transition-all"
+          >
             <LogOut className="w-4 h-4" /> Log Out
           </motion.button>
         </div>

@@ -1,9 +1,9 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Bell, UserPlus, Gamepad2, Gift, Star, Heart, Trash2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useFriends } from "../contexts/FriendContext"; 
-import { useSocket } from "../contexts/SocketContext"; // useSocket use karo
+import { useSocket } from "../contexts/SocketContext"; 
 import { toast } from "sonner";
 
 const typeConfig = {
@@ -17,66 +17,60 @@ const typeConfig = {
 
 const Notifications = () => {
   const navigate = useNavigate();
-  const { socket } = useSocket(); // SocketContext se socket lo
+  const { socket } = useSocket(); 
   const { acceptRequest, pendingRequests, fetchPendingRequests, setPendingRequests } = useFriends(); 
-  const [notifications, setNotifications] = useState([]);
   const [filter, setFilter] = useState("all");
 
-  // 1. Initial Load & Socket Listen
   useEffect(() => {
-    fetchPendingRequests(); // API se purana data lao
+    fetchPendingRequests();
 
-    if (socket) {
-      const handleNewRequest = (data) => {
-        // FriendContext ki state update karo taaki formatted list apne aap update ho jaye
-        setPendingRequests((prev) => [data, ...prev]);
-        toast.success(`New request from ${data.senderName || "someone"}! 🌸`);
-      };
+    if (!socket) return;
 
-      socket.on("newFriendRequest", handleNewRequest);
-      return () => socket.off("newFriendRequest", handleNewRequest);
-    }
-  }, [socket]); // Context functions dependecy mein dalne ki zarurat nahi agar wo useCallback nahi hain
+    const handleNewRequest = (data) => {
+      setPendingRequests((prev) => [data, ...prev]);
+      toast.success(`New request from ${data.senderName || "someone"}!`);
+    };
 
-  // 2. Sync Real Data to Notification State
-  useEffect(() => {
-    if (pendingRequests && pendingRequests.length > 0) {
-      const formattedReqs = pendingRequests.map(req => ({
-        id: req._id || Math.random(),
-        senderId: req._id,
-        type: "friend_request",
-        title: `${req.username || "Someone"} sent you a friend request`,
-        description: "Tap to accept or decline",
-        time: "New",
-        read: false,
-        avatar: req.avatar
-      }));
-      setNotifications(formattedReqs);
-    } else {
-      setNotifications([]); // Agar khali hai toh khali karo
-    }
+    socket.on("newFriendRequest", handleNewRequest);
+    return () => socket.off("newFriendRequest", handleNewRequest);
+  }, [socket, fetchPendingRequests, setPendingRequests]);
+
+  const notifications = useMemo(() => {
+    if (!pendingRequests || pendingRequests.length === 0) return [];
+    
+    return pendingRequests.map(req => ({
+      id: req._id || Math.random().toString(),
+      senderId: req._id,
+      type: "friend_request",
+      title: `${req.username || "Someone"} sent you a friend request`,
+      description: "Tap to accept or decline",
+      time: "New",
+      read: false,
+      avatar: req.avatar
+    }));
   }, [pendingRequests]);
 
-  const handleAccept = async (notifId, senderId) => {
+  const handleAccept = useCallback(async (senderId) => {
     try {
       await acceptRequest(senderId);
-      toast.success("Accepted! Now you are Nakama! 🌸");
-      // Note: setPendingRequests context ke andar hi filter ho jayega toh yahan zarurat nahi
+      toast.success("Accepted! Now you are Nakama!");
     } catch (err) {
       toast.error("Failed to accept");
     }
-  };
+  }, [acceptRequest]);
 
-  const removeNotification = (id) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-  };
+  const removeNotification = useCallback((id) => {
+    setPendingRequests((prev) => prev.filter((req) => req._id !== id));
+  }, [setPendingRequests]);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
-  const filtered = filter === "unread" ? notifications.filter((n) => !n.read) : notifications;
+  const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
+  
+  const filteredNotifications = useMemo(() => {
+    return filter === "unread" ? notifications.filter((n) => !n.read) : notifications;
+  }, [filter, notifications]);
 
   return (
     <div className="flex flex-col h-screen relative z-10 bg-background overflow-hidden">
-      {/* Header */}
       <motion.header className="glass-panel px-4 py-3 flex items-center justify-between shadow-sm shrink-0">
         <div className="flex items-center gap-3">
           <ArrowLeft className="w-5 h-5 cursor-pointer" onClick={() => navigate("/")} />
@@ -90,7 +84,6 @@ const Notifications = () => {
         </div>
       </motion.header>
 
-      {/* Tabs */}
       <div className="px-4 py-3 shrink-0">
         <div className="flex gap-2 p-1 rounded-2xl bg-muted/30">
           {["all", "unread"].map((f) => (
@@ -107,11 +100,10 @@ const Notifications = () => {
         </div>
       </div>
 
-      {/* List Area */}
       <div className="flex-1 overflow-y-auto px-4 pb-6 scrollbar-hide">
         <AnimatePresence mode="popLayout">
-          {filtered.length > 0 ? (
-            filtered.map((notif) => {
+          {filteredNotifications.length > 0 ? (
+            filteredNotifications.map((notif) => {
               const config = typeConfig[notif.type] || typeConfig.system;
               const Icon = config.icon;
               
@@ -126,7 +118,7 @@ const Notifications = () => {
                 >
                   <div className="flex items-start gap-3">
                     {notif.avatar ? (
-                      <img src={notif.avatar} className="w-10 h-10 rounded-full object-cover" />
+                      <img src={notif.avatar} className="w-10 h-10 rounded-full object-cover" alt="" />
                     ) : (
                       <div className={`w-10 h-10 rounded-full ${config.bg} flex items-center justify-center`}>
                         <Icon className={`w-5 h-5 ${config.color}`} />
@@ -138,7 +130,7 @@ const Notifications = () => {
                       <p className="text-[11px] text-muted-foreground">{notif.description}</p>
                     </div>
 
-                    <button onClick={() => removeNotification(notif.id)} className="text-muted-foreground/20 hover:text-destructive">
+                    <button onClick={() => removeNotification(notif.senderId)} className="text-muted-foreground/20 hover:text-destructive">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -146,13 +138,13 @@ const Notifications = () => {
                   {notif.type === "friend_request" && (
                     <div className="flex gap-2 pl-12">
                       <button
-                        onClick={() => handleAccept(notif.id, notif.senderId)}
-                        className="bg-primary text-muted-foreground  px-6 py-2 rounded-2xl text-[11px] font-bold shadow-md hover:brightness-110 active:scale-95 transition"
+                        onClick={() => handleAccept(notif.senderId)}
+                        className="bg-primary text-muted-foreground px-6 py-2 rounded-2xl text-[11px] font-bold shadow-md hover:brightness-110 active:scale-95 transition"
                       >
                         Accept
                       </button>
                       <button
-                        onClick={() => removeNotification(notif.id)}
+                        onClick={() => removeNotification(notif.senderId)}
                         className="bg-primary text-muted-foreground px-6 py-2 rounded-2xl text-[11px] font-bold hover:bg-muted/80 transition"
                       >
                         Decline
@@ -165,7 +157,7 @@ const Notifications = () => {
           ) : (
             <div className="flex flex-col items-center justify-center py-24 opacity-30 text-center">
               <Bell className="w-16 h-16 mb-4" />
-              <p className="text-sm font-medium italic font-heading">All quiet in the guild... 🌸</p>
+              <p className="text-sm font-medium italic font-heading">All quiet in the guild...</p>
             </div>
           )}
         </AnimatePresence>

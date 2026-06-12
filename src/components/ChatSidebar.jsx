@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { motion ,AnimatePresence} from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Search, MoreVertical, MessageCircle, Bell } from "lucide-react";
 
 import AnimeAvatar from "../components/AnimeAvatar";
@@ -11,6 +11,7 @@ import { useChat } from "../contexts/ChatContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useFriends } from "../contexts/FriendContext";
 import { useSocket } from "../contexts/SocketContext";
+
 const ChatSidebar = () => {
   const { chatId } = useParams();
   const navigate = useNavigate();
@@ -19,7 +20,6 @@ const ChatSidebar = () => {
   const { onlineUsers } = useSocket();
   const {
     conversations,
-    setConversations, // 👈 Make sure ChatContext exports this
     setSelectedUser,
     fetchMessages,
     fetchConversations,
@@ -34,14 +34,14 @@ const ChatSidebar = () => {
     if (fetchConversations) {
       fetchConversations();
     }
-  }, []);
+  }, [fetchConversations]);
 
-  const navigationTabs = [
+  const navigationTabs = useMemo(() => [
     { key: "chats", label: "Chats" },
     { key: "Guild", label: "Guild" },
     { key: "friends", label: "Friends" },
     { key: "games", label: "Games" },
-  ];
+  ], []);
 
   const filteredConversations = useMemo(() => {
     if (!conversations) return [];
@@ -58,9 +58,14 @@ const ChatSidebar = () => {
     });
   }, [conversations, search]);
 
+  const handleSelectChat = useCallback((conv) => {
+    if (setSelectedUser) setSelectedUser(conv);
+    if (fetchMessages) fetchMessages(conv._id);
+    navigate(`/chat/${conv._id}`);
+  }, [setSelectedUser, fetchMessages, navigate]);
+
   return (
     <div className="flex flex-col h-full bg-background border-r">
-      {/* Header Section */}
       <header className="px-4 pt-5 pb-3">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -119,13 +124,17 @@ const ChatSidebar = () => {
             <button
               key={t.key}
               onClick={() => {
-                if (t.key === "games") { navigate("/games"); return; }
+                if (t.key === "games") {
+                  navigate("/games");
+                  return;
+                }
                 setTab(t.key);
               }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-heading font-bold transition-all duration-200 ${tab === t.key
-                ? "bg-primary text-primary-foreground shadow-md"
-                : "text-muted-foreground hover:bg-muted/20"
-                }`}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-heading font-bold transition-all duration-200 ${
+                tab === t.key
+                  ? "bg-primary text-primary-foreground shadow-md"
+                  : "text-muted-foreground hover:bg-muted/20"
+              }`}
             >
               {t.label}
             </button>
@@ -133,8 +142,7 @@ const ChatSidebar = () => {
         </nav>
       </header>
 
-      {/* List Section */}
-     <main className="flex-1 overflow-y-auto px-2 custom-scrollbar">
+      <main className="flex-1 overflow-y-auto px-2 custom-scrollbar">
         <AnimatePresence mode="popLayout">
           {tab === "friends" ? (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -152,7 +160,7 @@ const ChatSidebar = () => {
                       key={conv._id}
                       index={i}
                       isActive={chatId === conv._id}
-                      onClick={() => handleSelectChat(conv)}
+                      isOnline={isOnline}
                       chat={{
                         id: conv._id,
                         name: conv.username || conv.name || "Unknown",
@@ -160,7 +168,6 @@ const ChatSidebar = () => {
                         lastMessage: conv.lastMessage,
                         time: conv.updatedAt ? new Date(conv.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "",
                         unread: conv.unreadCount || 0,
-                        status: isOnline ? "online" : "offline"
                       }}
                     />
                   );

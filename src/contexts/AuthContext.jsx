@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useMemo, useCallback } from "react";
 import {
   loginUser,
   registerUser,
@@ -10,7 +10,7 @@ import api from "../Api/axios";
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  // State initialization: 
+  // State initialization: Safe load from localStorage
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem("userInfo");
     try {
@@ -20,15 +20,10 @@ export const AuthProvider = ({ children }) => {
     }
   });
 
-  // LOGIN logic
-  const signIn = async (email, password) => {
+  // 1. LOGIN logic (Memoized)
+  const signIn = useCallback(async (email, password) => {
     try {
       const response = await loginUser(email, password);
-
-      // Yahan Console karke dekho backend kya bhej raha hai
-      console.log("Backend Response:", response);
-
-      // Agar response direct data hai (kyunki api.js mein .data return ho chuka hai)
       const data = response;
 
       if (!data || !data.token) {
@@ -43,93 +38,93 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return { error: error.response?.data || { message: "Login failed" } };
     }
-  };
+  }, []);
 
-  // SEND OTP
-  const sendOTP = async (email) => {
-  try {
-    if (!email) {
-      return { error: { message: "Email is required" } };
+  // 2. SEND OTP (Memoized)
+  const sendOTP = useCallback(async (email) => {
+    try {
+      if (!email) {
+        return { error: { message: "Email is required" } };
+      }
+      const response = await sendOTPApi(email);
+      return { data: response, error: null };
+    } catch (error) {
+      return { error: error.response?.data || { message: "Failed to send OTP" } };
     }
+  }, []);
 
-    const response = await sendOTPApi(email);
-    return { data: response, error: null };
-
-  } catch (error) {
-    return { error: error.response?.data || { message: "Failed to send OTP" } };
-  }
-};
-
-  // VERIFY OTP
-  const verifyEmail = async (email, otp) => {
+  // 3. VERIFY OTP (Memoized)
+  const verifyEmail = useCallback(async (email, otp) => {
     try {
       await verifyOTPApi(email, otp);
       return { error: null };
     } catch (error) {
       return { error: error.response?.data || { message: "Invalid OTP" } };
     }
-  };
+  }, []);
 
-  // FINAL SIGNUP
- const signUp = async (userData) => {
-  try {
-    const response = await registerUser(userData);
-    
-    // YAHAN FIX HAI: registerUser pehle hi data bhej raha hai
-    const data = response; 
+  // 4. FINAL SIGNUP (Memoized)
+  const signUp = useCallback(async (userData) => {
+    try {
+      const response = await registerUser(userData);
+      const data = response; 
 
-    if (!data || !data.token) {
-      // Agar backend se account ban gaya par token nahi aaya
-      return { error: { message: "Account toh ban gaya par login nahi ho paya (No Token)" } };
+      if (!data || !data.token) {
+        return { error: { message: "Account toh ban gaya par login nahi ho paya (No Token)" } };
+      }
+
+      const userInfo = { ...data.user, token: data.token };
+      localStorage.setItem("userInfo", JSON.stringify(userInfo));
+      setUser(userInfo);
+
+      return { data: userInfo, error: null };
+    } catch (error) {
+      return { error: error.response?.data || { message: "Signup failed" } };
     }
+  }, []);
 
-    const userInfo = {
-      ...data.user,
-      token: data.token
-    };
-
-    localStorage.setItem("userInfo", JSON.stringify(userInfo));
-    setUser(userInfo);
-
-    return { data: userInfo, error: null };
-  } catch (error) {
-    // Backend se error message nikaalne ke liye
-    return { error: error.response?.data || { message: "Signup failed" } };
-  }
-};
-  // AuthContext.jsx
-  const updateProfile = async (userData) => {
+  // 5. UPDATE PROFILE (Memoized - relies on 'user' state)
+  const updateProfile = useCallback(async (userData) => {
     try {
       const response = await api.put("/auth/profile", userData);
+      const updatedUser = response.data; 
 
-      const updatedUser = response.data; //  FIXED
-
-      const newUserInfo = { ...user, ...updatedUser };
-
-      localStorage.setItem("userInfo", JSON.stringify(newUserInfo));
-      setUser(newUserInfo);
+      setUser((currentUser) => {
+        const newUserInfo = { ...currentUser, ...updatedUser };
+        localStorage.setItem("userInfo", JSON.stringify(newUserInfo));
+        return newUserInfo;
+      });
 
       return { success: true, data: updatedUser };
-
     } catch (error) {
       console.error("PROFILE UPDATE ERROR:", error.response || error);
-
       return {
         success: false,
         error: error.response?.data?.message || "Update failed",
       };
     }
-  };
-  // LOGOUT
-  const logout = () => {
+  }, []);
+
+  // 6. LOGOUT (Memoized)
+  const logout = useCallback(() => {
     localStorage.removeItem("userInfo");
     setUser(null);
-  };
+  }, []);
+
+  // 💡 CRITICAL FIX: Pure context value ko useMemo se wrap kiya taaki 
+  // jab tak 'user' change na ho, tab tak consumer components re-render na hon.
+  const contextValue = useMemo(() => ({
+    user,
+    signIn,
+    signUp,
+    logout,
+    sendOTP,
+    verifyEmail,
+    updateProfile
+  }), [user, signIn, signUp, logout, sendOTP, verifyEmail, updateProfile]);
 
   return (
-    <AuthContext.Provider
-      value={{ user, signIn, signUp, logout, sendOTP, verifyEmail, updateProfile }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
